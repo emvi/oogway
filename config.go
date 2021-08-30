@@ -20,8 +20,11 @@ var (
 )
 
 type config struct {
-	Hostname string
-	Port     int
+	Host             string
+	Port             int
+	ShutdownTimeout  int
+	HTTPWriteTimeout int
+	HTTPReadTimeout  int
 }
 
 func loadConfig(dir string) error {
@@ -35,7 +38,26 @@ func loadConfig(dir string) error {
 		return fmt.Errorf("error loading config.toml: %s", err)
 	}
 
+	setConfigDefaults()
 	return nil
+}
+
+func setConfigDefaults() {
+	if cfg.Port == 0 {
+		cfg.Port = 8080
+	}
+
+	if cfg.ShutdownTimeout == 0 {
+		cfg.ShutdownTimeout = 30
+	}
+
+	if cfg.HTTPWriteTimeout == 0 {
+		cfg.HTTPWriteTimeout = 5
+	}
+
+	if cfg.HTTPReadTimeout == 0 {
+		cfg.HTTPReadTimeout = 5
+	}
 }
 
 func watchConfig(ctx context.Context, dir string) error {
