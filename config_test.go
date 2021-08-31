@@ -11,7 +11,7 @@ import (
 )
 
 const (
-	sampleConfig = `hostname = "localhost"
+	sampleConfig = `host = "localhost"
 port = 8080`
 )
 
@@ -19,7 +19,7 @@ func TestLoadConfig(t *testing.T) {
 	assert.NoError(t, os.RemoveAll("config.toml"))
 	assert.NoError(t, os.WriteFile("config.toml", []byte(sampleConfig), 0644))
 	assert.NoError(t, loadConfig("."))
-	assert.Equal(t, "localhost", cfg.Hostname)
+	assert.Equal(t, "localhost", cfg.Host)
 	assert.Equal(t, 8080, cfg.Port)
 }
 
