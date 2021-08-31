@@ -1,7 +1,6 @@
 package oogway
 
 import (
-	"io"
 	"io/fs"
 	"log"
 	"os"
@@ -9,19 +8,24 @@ import (
 )
 
 const (
-	partialsDir = "partials"
-	tplFileExt  = ".html"
+	contentDir      = "content"
+	contentPageFile = "index.html"
 )
 
-func loadPartials(dir string) error {
-	d := filepath.Join(dir, partialsDir)
+var (
+	tpl = newTplCache()
+)
+
+// TODO add/return routes
+func loadContent(dir string) error {
+	d := filepath.Join(dir, contentDir)
 
 	if _, err := os.Stat(d); os.IsNotExist(err) || isEmptyDir(d) {
 		return nil
 	}
 
 	return filepath.WalkDir(d, func(path string, d fs.DirEntry, err error) error {
-		if !d.IsDir() && filepath.Ext(path) == tplFileExt {
+		if !d.IsDir() && d.Name() == contentPageFile {
 			if err := tpl.load(path); err != nil {
 				log.Printf("Error loading template %s: %s", path, err)
 			}
@@ -29,16 +33,4 @@ func loadPartials(dir string) error {
 
 		return nil
 	})
-}
-
-func isEmptyDir(path string) bool {
-	f, err := os.Open(path)
-
-	if err != nil {
-		return true
-	}
-
-	defer f.Close()
-	_, err = f.Readdirnames(1)
-	return err == io.EOF
 }

@@ -28,6 +28,11 @@ func Start(dir string, funcmap template.FuncMap) error {
 		return err
 	}
 
+	if err := loadContent(dir); err != nil {
+		cancel()
+		return err
+	}
+
 	router := setupRouter(dir)
 
 	if err := startServer(router, cancel); err != nil {
