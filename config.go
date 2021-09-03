@@ -8,7 +8,7 @@ import (
 	"path/filepath"
 
 	"github.com/BurntSushi/toml"
-	"github.com/fsnotify/fsnotify"
+	"github.com/rjeczalik/notify"
 )
 
 const (
@@ -60,48 +60,28 @@ func setConfigDefaults() {
 	}
 }
 
-// TODO remove fsnotify
 func watchConfig(ctx context.Context, dir string) error {
 	if err := loadConfig(dir); err != nil {
 		return err
 	}
 
-	watcher, err := fsnotify.NewWatcher()
-
-	if err != nil {
-		return err
-	}
+	change := make(chan notify.EventInfo, 1)
 
 	go func() {
 		for {
 			select {
-			case event, ok := <-watcher.Events:
-				if !ok {
-					watcher.Close()
-					return
+			case <-change:
+				if err := loadConfig(dir); err != nil {
+					log.Printf("Error updating config.toml: %s", err)
 				}
-
-				if event.Op&fsnotify.Write == fsnotify.Write {
-					if err := loadConfig(dir); err != nil {
-						log.Printf("Error updating config.toml: %s", err)
-					}
-				}
-			case err, ok := <-watcher.Errors:
-				watcher.Close()
-
-				if !ok {
-					return
-				}
-
-				panic(err)
 			case <-ctx.Done():
-				watcher.Close()
+				notify.Stop(change)
 				return
 			}
 		}
 	}()
 
-	if err := watcher.Add(filepath.Join(dir, configFile)); err != nil {
+	if err := notify.Watch(filepath.Join(dir, configFile), change, notify.Write); err != nil {
 		return err
 	}
 
