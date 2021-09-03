@@ -17,23 +17,23 @@ func newTplCache() *tplCache {
 	}
 }
 
-func (cache *tplCache) load(path string) error {
+func (cache *tplCache) load(path string) (*template.Template, error) {
 	cache.m.Lock()
 	defer cache.m.Unlock()
 	content, err := os.ReadFile(path)
 
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	tpl, err := template.New(path).Parse(string(content))
 
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	cache.templates[path] = *tpl
-	return nil
+	return tpl, nil
 }
 
 func (cache *tplCache) get(name string) *template.Template {

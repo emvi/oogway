@@ -45,6 +45,7 @@ func Start(dir string, funcmap template.FuncMap) error {
 func setupRouter(dir string) *mux.Router {
 	router := mux.NewRouter()
 	serveAssets(router, dir)
+	servePage(router)
 	return router
 }
 

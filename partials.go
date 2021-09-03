@@ -22,7 +22,7 @@ func loadPartials(dir string) error {
 
 	return filepath.WalkDir(d, func(path string, d fs.DirEntry, err error) error {
 		if !d.IsDir() && filepath.Ext(path) == tplFileExt {
-			if err := tpl.load(path); err != nil {
+			if _, err := tpl.load(path); err != nil {
 				log.Printf("Error loading template %s: %s", path, err)
 			}
 		}

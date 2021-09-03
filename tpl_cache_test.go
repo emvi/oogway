@@ -16,7 +16,9 @@ func TestTplCache(t *testing.T) {
 	assert.NoError(t, os.WriteFile(tplPath, []byte("<h1>Hello World!</h1>"), 0777))
 	cache := newTplCache()
 	assert.Nil(t, cache.get(tplPath))
-	assert.NoError(t, cache.load(tplPath))
+	addedTpl, err := cache.load(tplPath)
+	assert.NoError(t, err)
+	assert.NotNil(t, addedTpl)
 	tpl := cache.get(tplPath)
 	assert.NotNil(t, tpl)
 	var buffer bytes.Buffer
