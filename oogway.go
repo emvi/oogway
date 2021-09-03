@@ -23,12 +23,12 @@ func Start(dir string, funcmap template.FuncMap) error {
 		return err
 	}
 
-	if err := loadPartials(dir); err != nil {
+	if err := watchPartials(ctx, dir); err != nil {
 		cancel()
 		return err
 	}
 
-	if err := loadContent(dir); err != nil {
+	if err := watchContent(ctx, dir); err != nil {
 		cancel()
 		return err
 	}

@@ -1,11 +1,14 @@
 package oogway
 
 import (
+	"context"
 	"io"
 	"io/fs"
 	"log"
 	"os"
 	"path/filepath"
+
+	"github.com/rjeczalik/notify"
 )
 
 const (
@@ -13,7 +16,12 @@ const (
 	tplFileExt  = ".html"
 )
 
+var (
+	partials = newTplCache()
+)
+
 func loadPartials(dir string) error {
+	partials.clear()
 	d := filepath.Join(dir, partialsDir)
 
 	if _, err := os.Stat(d); os.IsNotExist(err) || isEmptyDir(d) {
@@ -22,13 +30,41 @@ func loadPartials(dir string) error {
 
 	return filepath.WalkDir(d, func(path string, d fs.DirEntry, err error) error {
 		if !d.IsDir() && filepath.Ext(path) == tplFileExt {
-			if _, err := tpl.load(path); err != nil {
+			if _, err := partials.load(path); err != nil {
 				log.Printf("Error loading template %s: %s", path, err)
 			}
 		}
 
 		return nil
 	})
+}
+
+func watchPartials(ctx context.Context, dir string) error {
+	if err := loadPartials(dir); err != nil {
+		return err
+	}
+
+	change := make(chan notify.EventInfo, 1)
+
+	go func() {
+		for {
+			select {
+			case <-change:
+				if err := loadPartials(dir); err != nil {
+					log.Printf("Error updating partials: %s", err)
+				}
+			case <-ctx.Done():
+				notify.Stop(change)
+				return
+			}
+		}
+	}()
+
+	if err := notify.Watch(filepath.Join(dir, partialsDir), change, notify.All); err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func isEmptyDir(path string) bool {

@@ -60,6 +60,7 @@ func setConfigDefaults() {
 	}
 }
 
+// TODO remove fsnotify
 func watchConfig(ctx context.Context, dir string) error {
 	if err := loadConfig(dir); err != nil {
 		return err
@@ -82,7 +83,7 @@ func watchConfig(ctx context.Context, dir string) error {
 
 				if event.Op&fsnotify.Write == fsnotify.Write {
 					if err := loadConfig(dir); err != nil {
-						log.Printf("error updating config.toml: %s", err)
+						log.Printf("Error updating config.toml: %s", err)
 					}
 				}
 			case err, ok := <-watcher.Errors:
