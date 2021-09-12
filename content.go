@@ -80,24 +80,43 @@ func watchContent(ctx context.Context, dir string, funcMap template.FuncMap) err
 }
 
 func servePage(router *mux.Router) {
-	router.PathPrefix("/").Handler(gziphandler.GzipHandler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		path := r.URL.Path
+	router.PathPrefix("/").Handler(gziphandler.GzipHandler(http.HandlerFunc(renderPage)))
+}
 
-		if !strings.HasSuffix(path, "/") {
-			path += "/"
+func renderPage(w http.ResponseWriter, r *http.Request) {
+	path := r.URL.Path
+
+	if !strings.HasSuffix(path, "/") {
+		path += "/"
+	}
+
+	tpl := routes.findTemplate(path)
+
+	if tpl == nil {
+		w.WriteHeader(http.StatusNotFound)
+
+		if cfg.Content.NotFound != "" {
+			path = cfg.Content.NotFound
+
+			if !strings.HasSuffix(path, "/") {
+				path += "/"
+			}
+
+			tpl = routes.findTemplate(path)
+
+			if tpl != nil {
+				if err := tpl.Execute(w, nil); err != nil {
+					log.Printf("Error rendering page %s: %s", r.URL.Path, err)
+					w.WriteHeader(http.StatusInternalServerError)
+				}
+			}
 		}
 
-		tpl := routes.findTemplate(path)
+		return
+	}
 
-		if tpl == nil {
-			// TODO configurable 404 page
-			w.WriteHeader(http.StatusNotFound)
-			return
-		}
-
-		if err := tpl.Execute(w, nil); err != nil {
-			log.Printf("Error rendering page %s: %s", r.URL.Path, err)
-			w.WriteHeader(http.StatusInternalServerError)
-		}
-	})))
+	if err := tpl.Execute(w, nil); err != nil {
+		log.Printf("Error rendering page %s: %s", r.URL.Path, err)
+		w.WriteHeader(http.StatusInternalServerError)
+	}
 }

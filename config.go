@@ -21,11 +21,22 @@ var (
 
 // Config is the Oogway application config.
 type Config struct {
-	Host             string
-	Port             int
-	ShutdownTimeout  int
-	HTTPWriteTimeout int
-	HTTPReadTimeout  int
+	Server  ServerConfig
+	Content ContentConfig
+}
+
+// ServerConfig is the HTTP server configuration.
+type ServerConfig struct {
+	Host            string
+	Port            int
+	ShutdownTimeout int `toml:"shutdown_time"`
+	WriteTimeout    int `toml:"write_timeout"`
+	ReadTimeout     int `toml:"read_timeout"`
+}
+
+// ContentConfig is the content configuration.
+type ContentConfig struct {
+	NotFound string `toml:"not_found"`
 }
 
 func loadConfig(dir string) error {
@@ -44,20 +55,20 @@ func loadConfig(dir string) error {
 }
 
 func setConfigDefaults() {
-	if cfg.Port == 0 {
-		cfg.Port = 8080
+	if cfg.Server.Port == 0 {
+		cfg.Server.Port = 8080
 	}
 
-	if cfg.ShutdownTimeout == 0 {
-		cfg.ShutdownTimeout = 30
+	if cfg.Server.ShutdownTimeout == 0 {
+		cfg.Server.ShutdownTimeout = 30
 	}
 
-	if cfg.HTTPWriteTimeout == 0 {
-		cfg.HTTPWriteTimeout = 5
+	if cfg.Server.WriteTimeout == 0 {
+		cfg.Server.WriteTimeout = 5
 	}
 
-	if cfg.HTTPReadTimeout == 0 {
-		cfg.HTTPReadTimeout = 5
+	if cfg.Server.ReadTimeout == 0 {
+		cfg.Server.ReadTimeout = 5
 	}
 }
 

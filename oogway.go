@@ -54,9 +54,9 @@ func setupRouter(dir string) *mux.Router {
 func startServer(handler http.Handler, cancel context.CancelFunc) error {
 	server := &http.Server{
 		Handler:      handler,
-		Addr:         fmt.Sprintf("%s:%d", cfg.Host, cfg.Port),
-		WriteTimeout: time.Second * time.Duration(cfg.HTTPWriteTimeout),
-		ReadTimeout:  time.Second * time.Duration(cfg.HTTPReadTimeout),
+		Addr:         fmt.Sprintf("%s:%d", cfg.Server.Host, cfg.Server.Port),
+		WriteTimeout: time.Second * time.Duration(cfg.Server.WriteTimeout),
+		ReadTimeout:  time.Second * time.Duration(cfg.Server.ReadTimeout),
 	}
 
 	go func() {
@@ -65,7 +65,7 @@ func startServer(handler http.Handler, cancel context.CancelFunc) error {
 		<-sigint
 		log.Println("Shutting down server...")
 		cancel()
-		ctx, _ := context.WithTimeout(context.Background(), time.Second*time.Duration(cfg.ShutdownTimeout))
+		ctx, _ := context.WithTimeout(context.Background(), time.Second*time.Duration(cfg.Server.ShutdownTimeout))
 
 		if err := server.Shutdown(ctx); err != nil {
 			log.Fatalf("Error shutting down server gracefully: %s", err)
