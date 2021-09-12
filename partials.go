@@ -2,6 +2,7 @@ package oogway
 
 import (
 	"context"
+	"html/template"
 	"io"
 	"io/fs"
 	"log"
@@ -20,7 +21,7 @@ var (
 	partials = newTplCache()
 )
 
-func loadPartials(dir string) error {
+func loadPartials(dir string, funcMap template.FuncMap) error {
 	partials.clear()
 	d := filepath.Join(dir, partialsDir)
 
@@ -30,7 +31,7 @@ func loadPartials(dir string) error {
 
 	return filepath.WalkDir(d, func(path string, d fs.DirEntry, err error) error {
 		if !d.IsDir() && filepath.Ext(path) == tplFileExt {
-			if _, err := partials.load(path); err != nil {
+			if _, err := partials.load(path, funcMap); err != nil {
 				log.Printf("Error loading template %s: %s", path, err)
 			}
 		}
@@ -39,8 +40,8 @@ func loadPartials(dir string) error {
 	})
 }
 
-func watchPartials(ctx context.Context, dir string) error {
-	if err := loadPartials(dir); err != nil {
+func watchPartials(ctx context.Context, dir string, funcMap template.FuncMap) error {
+	if err := loadPartials(dir, funcMap); err != nil {
 		return err
 	}
 
@@ -50,7 +51,7 @@ func watchPartials(ctx context.Context, dir string) error {
 		for {
 			select {
 			case <-change:
-				if err := loadPartials(dir); err != nil {
+				if err := loadPartials(dir, funcMap); err != nil {
 					log.Printf("Error updating partials: %s", err)
 				}
 			case <-ctx.Done():

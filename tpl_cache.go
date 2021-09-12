@@ -17,7 +17,7 @@ func newTplCache() *tplCache {
 	}
 }
 
-func (cache *tplCache) load(path string) (*template.Template, error) {
+func (cache *tplCache) load(path string, funcMap template.FuncMap) (*template.Template, error) {
 	cache.m.Lock()
 	defer cache.m.Unlock()
 	content, err := os.ReadFile(path)
@@ -26,7 +26,7 @@ func (cache *tplCache) load(path string) (*template.Template, error) {
 		return nil, err
 	}
 
-	tpl, err := template.New(path).Parse(string(content))
+	tpl, err := template.New(path).Funcs(funcMap).Parse(string(content))
 
 	if err != nil {
 		return nil, err

@@ -2,6 +2,7 @@ package oogway
 
 import (
 	"context"
+	"html/template"
 	"io/fs"
 	"log"
 	"net/http"
@@ -24,8 +25,9 @@ var (
 	routes  = newRouter()
 )
 
-func loadContent(dir string) error {
+func loadContent(dir string, funcMap template.FuncMap) error {
 	content.clear()
+	routes.clear()
 	contentDirPath := filepath.Join(dir, contentDir)
 
 	if _, err := os.Stat(contentDirPath); os.IsNotExist(err) || isEmptyDir(contentDirPath) {
@@ -34,7 +36,7 @@ func loadContent(dir string) error {
 
 	return filepath.WalkDir(contentDirPath, func(path string, d fs.DirEntry, err error) error {
 		if !d.IsDir() && d.Name() == contentPageFile {
-			tpl, err := content.load(path)
+			tpl, err := content.load(path, funcMap)
 
 			if err != nil {
 				log.Printf("Error loading template %s: %s", path, err)
@@ -49,8 +51,8 @@ func loadContent(dir string) error {
 	})
 }
 
-func watchContent(ctx context.Context, dir string) error {
-	if err := loadContent(dir); err != nil {
+func watchContent(ctx context.Context, dir string, funcMap template.FuncMap) error {
+	if err := loadContent(dir, funcMap); err != nil {
 		return err
 	}
 
@@ -60,7 +62,7 @@ func watchContent(ctx context.Context, dir string) error {
 		for {
 			select {
 			case <-change:
-				if err := loadContent(dir); err != nil {
+				if err := loadContent(dir, funcMap); err != nil {
 					log.Printf("Error updating content: %s", err)
 				}
 			case <-ctx.Done():

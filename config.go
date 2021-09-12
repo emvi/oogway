@@ -16,10 +16,11 @@ const (
 )
 
 var (
-	cfg config
+	cfg Config
 )
 
-type config struct {
+// Config is the Oogway application config.
+type Config struct {
 	Host             string
 	Port             int
 	ShutdownTimeout  int

@@ -15,7 +15,7 @@ import (
 
 // Start starts the Oogway server for given directory.
 // The second argument is an optional template.FuncMap that will be merged into Oogway's funcmap.
-func Start(dir string, funcmap template.FuncMap) error {
+func Start(dir string, funcMap template.FuncMap) error {
 	ctx, cancel := context.WithCancel(context.Background())
 
 	if err := watchConfig(ctx, dir); err != nil {
@@ -23,12 +23,14 @@ func Start(dir string, funcmap template.FuncMap) error {
 		return err
 	}
 
-	if err := watchPartials(ctx, dir); err != nil {
+	m := mergeFuncMaps(funcMap)
+
+	if err := watchPartials(ctx, dir, m); err != nil {
 		cancel()
 		return err
 	}
 
-	if err := watchContent(ctx, dir); err != nil {
+	if err := watchContent(ctx, dir, m); err != nil {
 		cancel()
 		return err
 	}
@@ -75,14 +77,4 @@ func startServer(handler http.Handler, cancel context.CancelFunc) error {
 	}
 
 	return nil
-
-	/*if c.Server.HTTP.TLS {
-		if err := server.ListenAndServeTLS(c.Server.HTTP.TLSCert, c.Server.HTTP.TLSKey); err != nil && err != http.ErrServerClosed {
-			logbuch.Fatal(err.Error())
-		}
-	} else {
-		if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
-			logbuch.Fatal(err.Error())
-		}
-	}*/
 }
