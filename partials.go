@@ -61,7 +61,7 @@ func watchPartials(ctx context.Context, dir string, funcMap template.FuncMap) er
 		}
 	}()
 
-	if err := notify.Watch(filepath.Join(dir, partialsDir), change, notify.All); err != nil {
+	if err := notify.Watch(filepath.Join(dir, partialsDir, "..."), change, notify.All); err != nil {
 		return err
 	}
 

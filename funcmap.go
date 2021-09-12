@@ -9,9 +9,9 @@ import (
 
 var (
 	defaultFuncMap = template.FuncMap{
-		"config":   func() Config { return cfg },
-		"template": renderTemplate,
-		"partial":  renderPartial,
+		"config":  func() Config { return cfg },
+		"content": renderContent,
+		"partial": renderPartial,
 	}
 )
 
@@ -37,7 +37,7 @@ func mergeFuncMaps(maps ...template.FuncMap) template.FuncMap {
 	return out
 }
 
-func renderTemplate(tpl string, data interface{}) template.HTML {
+func renderContent(tpl string, data interface{}) template.HTML {
 	c := content.get(tpl)
 
 	if c == nil {

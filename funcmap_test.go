@@ -24,7 +24,7 @@ func TestMergeFuncMaps(t *testing.T) {
 	assert.Nil(t, out["c"])
 }
 
-func TestRenderTemplate(t *testing.T) {
+func TestRenderContent(t *testing.T) {
 	assert.NoError(t, os.RemoveAll(contentDir))
 	assert.NoError(t, os.Mkdir(contentDir, 0777))
 	home := filepath.Join(contentDir, "index.html")
@@ -32,7 +32,7 @@ func TestRenderTemplate(t *testing.T) {
 	time.Sleep(time.Millisecond * 10)
 	ctx, cancel := context.WithCancel(context.Background())
 	assert.NoError(t, watchContent(ctx, ".", nil))
-	assert.Equal(t, template.HTML("This is the homepage."), renderTemplate("content/index.html", nil))
+	assert.Equal(t, template.HTML("This is the homepage."), renderContent("content/index.html", nil))
 	cancel()
 }
 

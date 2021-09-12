@@ -72,7 +72,7 @@ func watchContent(ctx context.Context, dir string, funcMap template.FuncMap) err
 		}
 	}()
 
-	if err := notify.Watch(filepath.Join(dir, contentDir), change, notify.All); err != nil {
+	if err := notify.Watch(filepath.Join(dir, contentDir, "..."), change, notify.All); err != nil {
 		return err
 	}
 
