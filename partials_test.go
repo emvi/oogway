@@ -21,7 +21,7 @@ func TestLoadPartials(t *testing.T) {
 	time.Sleep(time.Millisecond * 10)
 	assert.NoError(t, loadPartials(".", nil))
 	var buffer bytes.Buffer
-	assert.NoError(t, partials.get(tplPath).Execute(&buffer, nil))
+	assert.NoError(t, partials.get("tpl").Execute(&buffer, nil))
 	assert.Equal(t, "<h1>Hello World!</h1>", buffer.String())
 }
 
@@ -34,12 +34,12 @@ func TestWatchPartials(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	assert.NoError(t, watchPartials(ctx, ".", nil))
 	var buffer bytes.Buffer
-	assert.NoError(t, partials.get(tplPath).Execute(&buffer, nil))
+	assert.NoError(t, partials.get("tpl").Execute(&buffer, nil))
 	assert.Equal(t, "<h1>Hello World!</h1>", buffer.String())
 	assert.NoError(t, os.WriteFile(tplPath, []byte(`<p>Lorem ipsum</p>`), 0777))
 	time.Sleep(time.Millisecond * 10)
 	buffer.Reset()
-	assert.NoError(t, partials.get(tplPath).Execute(&buffer, nil))
+	assert.NoError(t, partials.get("tpl").Execute(&buffer, nil))
 	assert.Equal(t, "<p>Lorem ipsum</p>", buffer.String())
 	cancel()
 }

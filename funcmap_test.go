@@ -32,7 +32,7 @@ func TestRenderContent(t *testing.T) {
 	time.Sleep(time.Millisecond * 10)
 	ctx, cancel := context.WithCancel(context.Background())
 	assert.NoError(t, watchContent(ctx, ".", nil))
-	assert.Equal(t, template.HTML("This is the homepage."), renderContent("content/index.html", nil))
+	assert.Equal(t, template.HTML("This is the homepage."), renderContent("/", nil))
 	cancel()
 }
 
@@ -44,6 +44,6 @@ func TestRenderPartial(t *testing.T) {
 	time.Sleep(time.Millisecond * 10)
 	ctx, cancel := context.WithCancel(context.Background())
 	assert.NoError(t, watchPartials(ctx, ".", nil))
-	assert.Equal(t, template.HTML("This is a partial."), renderPartial("partials/partial.html", nil))
+	assert.Equal(t, template.HTML("This is a partial."), renderPartial("partial", nil))
 	cancel()
 }

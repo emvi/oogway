@@ -3,6 +3,8 @@ package oogway
 import (
 	"html/template"
 	"os"
+	"path/filepath"
+	"strings"
 	"sync"
 )
 
@@ -32,7 +34,7 @@ func (cache *tplCache) load(path string, funcMap template.FuncMap) (*template.Te
 		return nil, err
 	}
 
-	cache.templates[path] = *tpl
+	cache.templates[cache.getTemplateName(path)] = *tpl
 	return tpl, nil
 }
 
@@ -52,4 +54,23 @@ func (cache *tplCache) clear() {
 	cache.m.Lock()
 	defer cache.m.Unlock()
 	cache.templates = make(map[string]template.Template)
+}
+
+func (cache *tplCache) getTemplateName(path string) string {
+	if strings.HasPrefix(path, contentDir) {
+		path = filepath.Dir(path)
+		path = path[len(contentDir):]
+
+		if path == "" {
+			path = "/"
+		}
+	} else if strings.HasPrefix(path, partialsDir+"/") {
+		path = path[len(partialsDir+"/"):]
+
+		if strings.HasSuffix(path, ".html") {
+			path = path[:len(path)-len(".html")]
+		}
+	}
+
+	return path
 }

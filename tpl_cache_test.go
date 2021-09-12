@@ -19,9 +19,17 @@ func TestTplCache(t *testing.T) {
 	addedTpl, err := cache.load(tplPath, nil)
 	assert.NoError(t, err)
 	assert.NotNil(t, addedTpl)
-	tpl := cache.get(tplPath)
+	tpl := cache.get("tpl")
 	assert.NotNil(t, tpl)
 	var buffer bytes.Buffer
 	assert.NoError(t, tpl.Execute(&buffer, nil))
 	assert.Equal(t, "<h1>Hello World!</h1>", buffer.String())
+}
+
+func TestTplCacheTemplateName(t *testing.T) {
+	cache := newTplCache()
+	assert.Equal(t, "/", cache.getTemplateName("content/index.html"))
+	assert.Equal(t, "/foo", cache.getTemplateName("content/foo/index.html"))
+	assert.Equal(t, "test", cache.getTemplateName("partials/test.html"))
+	assert.Equal(t, "foo/test", cache.getTemplateName("partials/foo/test.html"))
 }
