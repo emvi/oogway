@@ -11,6 +11,7 @@ Oogway is for you if you:
 **Oogway is still work in progress!**
 
 * sync with GitHub repo (selected branch or master by default)
+* sass compiler?
 * documentation
 
 ## Installation and Setup
