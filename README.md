@@ -27,6 +27,10 @@ Oogway is for you if you:
 
 *WIP*
 
+## Using Oogway as a Library
+
+*WIP*
+
 ## License
 
 MIT

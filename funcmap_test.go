@@ -47,3 +47,17 @@ func TestRenderPartial(t *testing.T) {
 	assert.Equal(t, template.HTML("This is a partial."), renderPartial("partial", nil))
 	cancel()
 }
+
+func TestRenderMarkdown(t *testing.T) {
+	assert.NoError(t, os.RemoveAll(contentDir))
+	assert.NoError(t, os.Mkdir(contentDir, 0777))
+	file := filepath.Join(contentDir, "test.md")
+	assert.NoError(t, os.WriteFile(file, []byte("# Test {{.Var}}"), 0777))
+	time.Sleep(time.Millisecond * 10)
+	out := renderMarkdown(file, struct {
+		Var string
+	}{
+		"var",
+	})
+	assert.Equal(t, template.HTML("<h1>Test var</h1>\n"), out)
+}

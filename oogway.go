@@ -3,19 +3,36 @@ package oogway
 import (
 	"context"
 	"fmt"
+	"github.com/gorilla/mux"
 	"html/template"
 	"log"
 	"net/http"
 	"os"
 	"os/signal"
 	"time"
+)
 
-	"github.com/gorilla/mux"
+const (
+	headline = `
+ ________  ________  ________  ___       __   ________      ___    ___ 
+|\   __  \|\   __  \|\   ____\|\  \     |\  \|\   __  \    |\  \  /  /|
+\ \  \|\  \ \  \|\  \ \  \___|\ \  \    \ \  \ \  \|\  \   \ \  \/  / /
+ \ \  \\\  \ \  \\\  \ \  \  __\ \  \  __\ \  \ \   __  \   \ \    / / 
+  \ \  \\\  \ \  \\\  \ \  \|\  \ \  \|\__\_\  \ \  \ \  \   \/  /  /  
+   \ \_______\ \_______\ \_______\ \____________\ \__\ \__\__/  / /    
+    \|_______|\|_______|\|_______|\|____________|\|__|\|__|\___/ /     
+                                                          \|___|/
+v0.2-beta`
+)
+
+var (
+	tplFuncMap template.FuncMap
 )
 
 // Start starts the Oogway server for given directory.
 // The second argument is an optional template.FuncMap that will be merged into Oogway's funcmap.
 func Start(dir string, funcMap template.FuncMap) error {
+	log.Println(headline)
 	ctx, cancel := context.WithCancel(context.Background())
 
 	if err := watchConfig(ctx, dir); err != nil {
@@ -23,24 +40,20 @@ func Start(dir string, funcMap template.FuncMap) error {
 		return err
 	}
 
-	m := mergeFuncMaps(funcMap)
+	tplFuncMap = mergeFuncMaps(funcMap)
 
-	if err := watchPartials(ctx, dir, m); err != nil {
+	if err := watchPartials(ctx, dir, tplFuncMap); err != nil {
 		cancel()
 		return err
 	}
 
-	if err := watchContent(ctx, dir, m); err != nil {
+	if err := watchContent(ctx, dir, tplFuncMap); err != nil {
 		cancel()
 		return err
 	}
 
 	router := setupRouter(dir)
-
-	if err := startServer(router, cancel); err != nil {
-		return err
-	}
-
+	<-startServer(router, cancel)
 	return nil
 }
 
@@ -51,10 +64,12 @@ func setupRouter(dir string) *mux.Router {
 	return router
 }
 
-func startServer(handler http.Handler, cancel context.CancelFunc) error {
+func startServer(handler http.Handler, cancel context.CancelFunc) chan struct{} {
+	log.Println("Starting server...")
+	addr := fmt.Sprintf("%s:%d", cfg.Server.Host, cfg.Server.Port)
 	server := &http.Server{
 		Handler:      handler,
-		Addr:         fmt.Sprintf("%s:%d", cfg.Server.Host, cfg.Server.Port),
+		Addr:         addr,
 		WriteTimeout: time.Second * time.Duration(cfg.Server.WriteTimeout),
 		ReadTimeout:  time.Second * time.Duration(cfg.Server.ReadTimeout),
 	}
@@ -65,16 +80,25 @@ func startServer(handler http.Handler, cancel context.CancelFunc) error {
 		<-sigint
 		log.Println("Shutting down server...")
 		cancel()
-		ctx, _ := context.WithTimeout(context.Background(), time.Second*time.Duration(cfg.Server.ShutdownTimeout))
+		ctx, cancel := context.WithTimeout(context.Background(), time.Second*time.Duration(cfg.Server.ShutdownTimeout))
 
 		if err := server.Shutdown(ctx); err != nil {
 			log.Fatalf("Error shutting down server gracefully: %s", err)
 		}
+
+		cancel()
 	}()
 
-	if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
-		return err
-	}
+	done := make(chan struct{})
 
-	return nil
+	go func() {
+		if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+			log.Fatalf("Error starting server: %s", err)
+		}
+
+		done <- struct{}{}
+	}()
+
+	log.Printf("Server started on http://%s!", addr)
+	return done
 }

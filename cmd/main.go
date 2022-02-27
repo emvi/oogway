@@ -12,7 +12,6 @@ const (
 )
 
 func main() {
-	log.Println("Starting Oogway...")
 	dir := "."
 
 	if os.Getenv(oogwayDirEnv) != "" {

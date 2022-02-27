@@ -4,14 +4,19 @@ import (
 	"bytes"
 	"fmt"
 	"github.com/Masterminds/sprig"
+	"github.com/russross/blackfriday/v2"
 	"html/template"
+	"log"
+	"os"
+	tt "text/template"
 )
 
 var (
 	defaultFuncMap = template.FuncMap{
-		"config":  func() Config { return cfg },
-		"content": renderContent,
-		"partial": renderPartial,
+		"config":   func() Config { return cfg },
+		"content":  renderContent,
+		"partial":  renderPartial,
+		"markdown": renderMarkdown,
 	}
 )
 
@@ -67,4 +72,29 @@ func renderPartial(tpl string, data interface{}) template.HTML {
 	}
 
 	return template.HTML(buffer.String())
+}
+
+func renderMarkdown(file string, data interface{}) template.HTML {
+	content, err := os.ReadFile(file)
+
+	if err != nil {
+		log.Printf("Error loading markdown file '%s': %s", file, err)
+		return ""
+	}
+
+	tpl, err := tt.New("").Funcs(tt.FuncMap(tplFuncMap)).Parse(string(content))
+
+	if err != nil {
+		log.Printf("Error parsing markdown file '%s': %s", file, err)
+		return ""
+	}
+
+	var buffer bytes.Buffer
+
+	if err := tpl.Execute(&buffer, data); err != nil {
+		log.Printf("Error rendering markdown file '%s': %s", file, err)
+		return ""
+	}
+
+	return template.HTML(blackfriday.Run(buffer.Bytes()))
 }
