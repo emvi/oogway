@@ -8,6 +8,13 @@ Oogway is for you if you:
 * need more than just static content
 * don't want to fiddle on your server too much
 
+**Oogway is still work in progress!**
+
+* in-template markdown support
+* sync with GitHub repo (selected branch or master by default)
+* example website
+* documentation
+
 ## Installation and Setup
 
 *WIP*
@@ -16,7 +23,7 @@ Oogway is for you if you:
 
 *WIP*
 
-## Creating Content
+## Structuring Your Website
 
 *WIP*
 
