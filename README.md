@@ -10,9 +10,7 @@ Oogway is for you if you:
 
 **Oogway is still work in progress!**
 
-* in-template markdown support
 * sync with GitHub repo (selected branch or master by default)
-* example website
 * documentation
 
 ## Installation and Setup
