@@ -12,6 +12,7 @@ Oogway is for you if you:
 
 * sync with GitHub repo (selected branch or master by default)
 * sass compiler?
+* Docker image
 * documentation
 
 ## Installation and Setup
