@@ -1,3 +1,6 @@
 [server]
 host = "localhost"
 port = 8080
+
+[content]
+not_found = "/not-found"
