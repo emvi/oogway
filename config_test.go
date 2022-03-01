@@ -19,7 +19,16 @@ write_timeout = 10
 read_timeout = 11
 
 [content]
-not_found = "not-found"`
+not_found = "not-found"
+
+[sass]
+entrypoint = "style.scss"
+dir = "assets/scss"
+source_map = true
+watch = true
+out = "assets/style.css"
+out_source_map = "assets/style.css.map"
+`
 )
 
 func TestLoadConfig(t *testing.T) {
@@ -32,6 +41,11 @@ func TestLoadConfig(t *testing.T) {
 	assert.Equal(t, 10, cfg.Server.WriteTimeout)
 	assert.Equal(t, 11, cfg.Server.ReadTimeout)
 	assert.Equal(t, "not-found", cfg.Content.NotFound)
+	assert.Equal(t, "style.scss", cfg.Sass.Entrypoint)
+	assert.Equal(t, "assets/scss", cfg.Sass.Dir)
+	assert.True(t, cfg.Sass.Watch)
+	assert.Equal(t, "assets/style.css", cfg.Sass.Out)
+	assert.Equal(t, "assets/style.css.map", cfg.Sass.OutSourceMap)
 }
 
 func TestLoadConfigNotExists(t *testing.T) {

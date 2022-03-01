@@ -23,6 +23,7 @@ var (
 type Config struct {
 	Server  ServerConfig
 	Content ContentConfig
+	Sass    SassConfig
 }
 
 // ServerConfig is the HTTP server configuration.
@@ -37,6 +38,15 @@ type ServerConfig struct {
 // ContentConfig is the content configuration.
 type ContentConfig struct {
 	NotFound string `toml:"not_found"`
+}
+
+// SassConfig is the sass configuration.
+type SassConfig struct {
+	Entrypoint   string `toml:"entrypoint"`
+	Dir          string `toml:"dir"`
+	Watch        bool   `toml:"watch"`
+	Out          string `toml:"out"`
+	OutSourceMap string `toml:"out_source_map"`
 }
 
 func loadConfig(dir string) error {

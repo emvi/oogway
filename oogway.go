@@ -22,7 +22,7 @@ const (
    \ \_______\ \_______\ \_______\ \____________\ \__\ \__\__/  / /    
     \|_______|\|_______|\|_______|\|____________|\|__|\|__|\___/ /     
                                                           \|___|/
-v0.2-beta`
+v0.3-beta`
 )
 
 var (
@@ -36,6 +36,11 @@ func Start(dir string, funcMap template.FuncMap) error {
 	ctx, cancel := context.WithCancel(context.Background())
 
 	if err := watchConfig(ctx, dir); err != nil {
+		cancel()
+		return err
+	}
+
+	if err := watchSass(ctx, dir); err != nil {
 		cancel()
 		return err
 	}

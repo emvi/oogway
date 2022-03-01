@@ -1,3 +1,13 @@
 [server]
 host = "localhost"
 port = 8080
+
+[content]
+not_found = "/not-found"
+
+[sass]
+dir = "assets"
+entrypoint = "style.scss"
+out = "assets/style.css"
+out_source_map = "assets/style.css.map"
+watch = true
