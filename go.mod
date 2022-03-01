@@ -17,6 +17,7 @@ require (
 	github.com/bep/godartsass v0.12.0 // indirect
 	github.com/cli/safeexec v1.0.0 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
+	github.com/evanw/esbuild v0.14.23 // indirect
 	github.com/google/uuid v1.3.0 // indirect
 	github.com/huandu/xstrings v1.3.2 // indirect
 	github.com/imdario/mergo v0.3.12 // indirect

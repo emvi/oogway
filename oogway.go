@@ -45,6 +45,11 @@ func Start(dir string, funcMap template.FuncMap) error {
 		return err
 	}
 
+	if err := watchJS(ctx, dir); err != nil {
+		cancel()
+		return err
+	}
+
 	tplFuncMap = mergeFuncMaps(funcMap)
 
 	if err := watchPartials(ctx, dir, tplFuncMap); err != nil {

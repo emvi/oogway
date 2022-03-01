@@ -24,10 +24,16 @@ not_found = "not-found"
 [sass]
 entrypoint = "style.scss"
 dir = "assets/scss"
-source_map = true
 watch = true
 out = "assets/style.css"
 out_source_map = "assets/style.css.map"
+
+[js]
+entrypoint = "main.js"
+dir = "assets/js"
+watch = true
+out = "assets/bundle.js"
+source_map = true
 `
 )
 
@@ -46,6 +52,11 @@ func TestLoadConfig(t *testing.T) {
 	assert.True(t, cfg.Sass.Watch)
 	assert.Equal(t, "assets/style.css", cfg.Sass.Out)
 	assert.Equal(t, "assets/style.css.map", cfg.Sass.OutSourceMap)
+	assert.Equal(t, "main.js", cfg.JS.Entrypoint)
+	assert.Equal(t, "assets/js", cfg.JS.Dir)
+	assert.True(t, cfg.JS.Watch)
+	assert.Equal(t, "assets/bundle.js", cfg.JS.Out)
+	assert.True(t, cfg.JS.SourceMap)
 }
 
 func TestLoadConfigNotExists(t *testing.T) {

@@ -11,3 +11,10 @@ entrypoint = "style.scss"
 out = "assets/style.css"
 out_source_map = "assets/style.css.map"
 watch = true
+
+[js]
+dir = "assets"
+entrypoint = "entrypoint.js"
+out = "assets/bundle.js"
+out_source_map = "assets/bundle.js.map"
+watch = true

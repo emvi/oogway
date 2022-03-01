@@ -11,7 +11,7 @@ Oogway is for you if you:
 **Oogway is still work in progress!**
 
 * sync with GitHub repo (selected branch or master by default)
-* esbuild
+* favicon
 * Docker image
 * documentation
 
