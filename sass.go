@@ -4,6 +4,7 @@ import (
 	"context"
 	"github.com/bep/godartsass"
 	"github.com/rjeczalik/notify"
+	"io/fs"
 	"log"
 	"os"
 	"path/filepath"
@@ -34,8 +35,16 @@ func compileSass(dir string) {
 			return
 		}
 
+		dirs, err := getDirs(filepath.Join(dir, cfg.Sass.Dir))
+
+		if err != nil {
+			log.Printf("Error reading sass directory: %s", err)
+			return
+		}
+
 		result, err := sass.Execute(godartsass.Args{
 			Source:          string(content),
+			IncludePaths:    dirs,
 			OutputStyle:     godartsass.OutputStyleCompressed,
 			EnableSourceMap: cfg.Sass.OutSourceMap != "",
 		})
@@ -85,11 +94,27 @@ func watchSass(ctx context.Context, dir string) error {
 				}
 			}()
 
-			if err := notify.Watch(filepath.Join(dir, cfg.Sass.Dir), change, notify.Write); err != nil {
+			if err := notify.Watch(filepath.Join(dir, cfg.Sass.Dir, "..."), change, notify.Write); err != nil {
 				return err
 			}
 		}
 	}
 
 	return nil
+}
+
+func getDirs(root string) ([]string, error) {
+	dirs := make([]string, 0)
+
+	if err := filepath.WalkDir(root, func(path string, d fs.DirEntry, err error) error {
+		if d.IsDir() {
+			dirs = append(dirs, path)
+		}
+
+		return nil
+	}); err != nil {
+		return nil, err
+	}
+
+	return dirs, nil
 }
