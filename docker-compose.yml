@@ -1,0 +1,11 @@
+version: '3'
+
+services:
+  oogway:
+    image: github.com/emvi/oogway
+    container_name: oogway
+    restart: unless-stopped
+    ports:
+      - "8080:8080"
+    volumes:
+      - /oogway/data:/home/marvin/go/src/github.com/emvi/oogway/demo
