@@ -3,3 +3,5 @@ config.toml
 assets/
 partials/
 content/
+demo/assets/style.css
+demo/assets/style.css.map

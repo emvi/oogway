@@ -44,7 +44,6 @@ type ContentConfig struct {
 type SassConfig struct {
 	Entrypoint   string `toml:"entrypoint"`
 	Dir          string `toml:"dir"`
-	SourceMap    bool   `toml:"source_map"`
 	Watch        bool   `toml:"watch"`
 	Out          string `toml:"out"`
 	OutSourceMap string `toml:"out_source_map"`

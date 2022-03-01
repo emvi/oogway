@@ -43,7 +43,6 @@ func TestLoadConfig(t *testing.T) {
 	assert.Equal(t, "not-found", cfg.Content.NotFound)
 	assert.Equal(t, "style.scss", cfg.Sass.Entrypoint)
 	assert.Equal(t, "assets/scss", cfg.Sass.Dir)
-	assert.True(t, cfg.Sass.SourceMap)
 	assert.True(t, cfg.Sass.Watch)
 	assert.Equal(t, "assets/style.css", cfg.Sass.Out)
 	assert.Equal(t, "assets/style.css.map", cfg.Sass.OutSourceMap)
