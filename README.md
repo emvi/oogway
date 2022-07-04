@@ -11,6 +11,9 @@ Download the latest release for your platform from the release section on GitHub
 Move the binary to a directory in your $PATH (like `/usr/local/bin`).
 After that, you can call Oogway from the command line using the `oogway` command.
 
+* `oogway run <path>` will start Oogway in the given directory
+* `oogway init <path>` will initialize a new project in the given directory
+
 ## Configuration
 
 Oogway is configured using a single `config.toml` file in the project directory.

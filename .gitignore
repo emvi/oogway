@@ -3,6 +3,7 @@ config.toml
 assets/
 partials/
 content/
+test/
 demo/assets/style.css
 demo/assets/style.css.map
 demo/assets/bundle.js
