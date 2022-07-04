@@ -111,6 +111,13 @@ func main() {
 }
 ```
 
+## Building a release
+
+```
+GOOS=linux GOARCH=amd64 go build -a -installsuffix cgo -ldflags "-s -w" -o oogway cmd/main.go
+GOOS=windows GOARCH=amd64 go build -a -installsuffix cgo -ldflags "-s -w" -o oogway.exe cmd/main.go
+```
+
 ## License
 
 MIT
