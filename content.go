@@ -2,13 +2,16 @@ package oogway
 
 import (
 	"context"
+	"github.com/BurntSushi/toml"
 	"html/template"
 	"io/fs"
 	"log"
 	"net/http"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
+	"time"
 
 	"github.com/NYTimes/gziphandler"
 	"github.com/gorilla/mux"
@@ -18,23 +21,31 @@ import (
 const (
 	contentDir      = "content"
 	contentPageFile = "index.html"
+	metaPageFile    = "meta.toml"
 )
 
+type meta struct {
+	SitemapPriority float64 `toml:"sitemap_priority"`
+}
+
 var (
-	content = newTplCache()
-	routes  = newRouter()
+	content    = newTplCache()
+	routes     = newRouter()
+	sitemap    []sitemapURL
+	sitemapXML []byte
 )
 
 func loadContent(dir string, funcMap template.FuncMap) error {
 	content.clear()
 	routes.clear()
+	sitemap = make([]sitemapURL, 0)
 	contentDirPath := filepath.Join(dir, contentDir)
 
 	if _, err := os.Stat(contentDirPath); os.IsNotExist(err) || isEmptyDir(contentDirPath) {
 		return nil
 	}
 
-	return filepath.WalkDir(contentDirPath, func(path string, d fs.DirEntry, err error) error {
+	if err := filepath.WalkDir(contentDirPath, func(path string, d fs.DirEntry, err error) error {
 		if !d.IsDir() && d.Name() == contentPageFile {
 			tpl, err := content.load(path, funcMap)
 
@@ -45,10 +56,28 @@ func loadContent(dir string, funcMap template.FuncMap) error {
 
 			route := filepath.Dir(path)[len(contentDirPath):] + "/"
 			routes.addRoute(route, tpl)
+			m := loadMetaInformation(filepath.Dir(path))
+			sitemapPriority := m.SitemapPriority
+
+			if sitemapPriority <= 0.001 {
+				sitemapPriority = 1
+			}
+
+			sitemap = append(sitemap, sitemapURL{
+				Loc:      route,
+				Priority: strconv.FormatFloat(sitemapPriority, 'f', 2, 64),
+				Lastmod:  time.Now().Format(sitemapLastModFormat),
+			})
 		}
 
 		return nil
-	})
+	}); err != nil {
+		return err
+	}
+
+	var err error
+	sitemapXML, err = generateSitemap(sitemap)
+	return err
 }
 
 func watchContent(ctx context.Context, dir string, funcMap template.FuncMap) error {
@@ -79,8 +108,37 @@ func watchContent(ctx context.Context, dir string, funcMap template.FuncMap) err
 	return nil
 }
 
+func loadMetaInformation(path string) meta {
+	var m meta
+	content, err := os.ReadFile(filepath.Join(path, metaPageFile))
+
+	if os.IsNotExist(err) {
+		return m
+	}
+
+	if err != nil {
+		log.Printf("Error opening meta file %s: %s", path, err)
+		return m
+	}
+
+	if err := toml.Unmarshal(content, &m); err != nil {
+		log.Printf("Error loading meta file %s: %s", path, err)
+		return m
+	}
+
+	return m
+}
+
 func servePage(router *mux.Router) {
 	router.PathPrefix("/").Handler(gziphandler.GzipHandler(http.HandlerFunc(renderPage)))
+}
+
+func serveSitemap(router *mux.Router) {
+	router.Path("/sitemap.xml").HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if _, err := w.Write(sitemapXML); err != nil {
+			log.Printf("Error serving sitemap: %s", err)
+		}
+	})
 }
 
 func renderPage(w http.ResponseWriter, r *http.Request) {

@@ -59,6 +59,13 @@ Child directories can be reached by their directory name. `content/about/index.h
 You can place other files next to the page to use them to build your content.
 Like a markdown file which will be rendered on the page, for example.
 
+A `meta.toml` file can be created besides each `index.html` for additional configuration.
+
+```toml
+# sets the priority in the sitemap.xml. Default is 1
+sitemap_priority = 0.95
+```
+
 For a demo, check out the `demo` directory on the GitHub repository.
 
 ## Template Functions

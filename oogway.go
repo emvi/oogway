@@ -22,7 +22,7 @@ const (
    \ \_______\ \_______\ \_______\ \____________\ \__\ \__\__/  / /    
     \|_______|\|_______|\|_______|\|____________|\|__|\|__|\___/ /     
                                                           \|___|/
-v0.3-beta`
+v0.4-beta`
 )
 
 var (
@@ -69,6 +69,7 @@ func Start(dir string, funcMap template.FuncMap) error {
 
 func setupRouter(dir string) *mux.Router {
 	router := mux.NewRouter()
+	serveSitemap(router)
 	serveAssets(router, dir)
 	servePage(router)
 	return router
