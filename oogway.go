@@ -22,7 +22,7 @@ const (
    \ \_______\ \_______\ \_______\ \____________\ \__\ \__\__/  / /    
     \|_______|\|_______|\|_______|\|____________|\|__|\|__|\___/ /     
                                                           \|___|/
-v0.4-beta`
+v0.5-beta`
 )
 
 var (
@@ -33,6 +33,7 @@ var (
 // The second argument is an optional template.FuncMap that will be merged into Oogway's funcmap.
 func Start(dir string, funcMap template.FuncMap) error {
 	log.Println(headline)
+	log.Printf("Starting in directory: %s", dir)
 	ctx, cancel := context.WithCancel(context.Background())
 
 	if err := watchConfig(ctx, dir); err != nil {

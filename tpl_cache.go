@@ -4,8 +4,13 @@ import (
 	"html/template"
 	"os"
 	"path/filepath"
+	"regexp"
 	"strings"
 	"sync"
+)
+
+var (
+	removeBasePath = regexp.MustCompile("^(.*(?:partials|content))/")
 )
 
 type tplCache struct {
@@ -57,16 +62,25 @@ func (cache *tplCache) clear() {
 }
 
 func (cache *tplCache) getTemplateName(path string) string {
-	if strings.HasPrefix(path, contentDir) {
-		path = filepath.Dir(path)
-		path = path[len(contentDir):]
+	base := removeBasePath.FindStringSubmatch(path)
 
-		if path == "" {
+	if len(base) != 2 {
+		return ""
+	}
+
+	path = path[len(base[0]):]
+
+	if strings.HasSuffix(base[1], contentDir) {
+		path = filepath.Dir(path)
+
+		if path == "" || path == "." {
 			path = "/"
 		}
-	} else if strings.HasPrefix(path, partialsDir+"/") {
-		path = path[len(partialsDir+"/"):]
 
+		if !strings.HasPrefix(path, "/") {
+			path = "/" + path
+		}
+	} else if strings.HasSuffix(base[1], partialsDir) {
 		if strings.HasSuffix(path, ".html") {
 			path = path[:len(path)-len(".html")]
 		}

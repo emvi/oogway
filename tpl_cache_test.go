@@ -26,10 +26,14 @@ func TestTplCache(t *testing.T) {
 	assert.Equal(t, "<h1>Hello World!</h1>", buffer.String())
 }
 
-func TestTplCacheTemplateName(t *testing.T) {
+func TestTplCacheGetTemplateName(t *testing.T) {
 	cache := newTplCache()
 	assert.Equal(t, "/", cache.getTemplateName("content/index.html"))
 	assert.Equal(t, "/foo", cache.getTemplateName("content/foo/index.html"))
 	assert.Equal(t, "test", cache.getTemplateName("partials/test.html"))
 	assert.Equal(t, "foo/test", cache.getTemplateName("partials/foo/test.html"))
+	assert.Equal(t, "head", cache.getTemplateName("demo/partials/head.html"))
+	assert.Equal(t, "", cache.getTemplateName(""))
+	assert.Equal(t, "/", cache.getTemplateName("test/content/"))
+	assert.Equal(t, "", cache.getTemplateName("test/partials/"))
 }
