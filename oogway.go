@@ -26,6 +26,7 @@ v0.5-beta`
 )
 
 var (
+	baseDir    string
 	tplFuncMap template.FuncMap
 )
 
@@ -34,6 +35,7 @@ var (
 func Start(dir string, funcMap template.FuncMap) error {
 	log.Println(headline)
 	log.Printf("Starting in directory: %s", dir)
+	baseDir = dir
 	ctx, cancel := context.WithCancel(context.Background())
 
 	if err := watchConfig(ctx, dir); err != nil {

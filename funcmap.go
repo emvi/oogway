@@ -8,6 +8,7 @@ import (
 	"html/template"
 	"log"
 	"os"
+	"path/filepath"
 	tt "text/template"
 )
 
@@ -75,7 +76,7 @@ func renderPartial(tpl string, data interface{}) template.HTML {
 }
 
 func renderMarkdown(file string, data interface{}) template.HTML {
-	content, err := os.ReadFile(file)
+	content, err := os.ReadFile(filepath.Join(baseDir, file))
 
 	if err != nil {
 		log.Printf("Error loading markdown file '%s': %s", file, err)
