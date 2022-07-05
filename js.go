@@ -5,6 +5,7 @@ import (
 	esbuild "github.com/evanw/esbuild/pkg/api"
 	"github.com/rjeczalik/notify"
 	"log"
+	"os"
 	"path/filepath"
 	"strings"
 )
@@ -16,6 +17,11 @@ func compileJS(dir string) {
 
 	if cfg.JS.SourceMap {
 		sourceMap = esbuild.SourceMapExternal
+	}
+
+	if err := os.MkdirAll(filepath.Join(dir, filepath.Dir(cfg.JS.Out)), 0744); err != nil {
+		log.Printf("Error creating js output directory: %s", err)
+		return
 	}
 
 	result := esbuild.Build(esbuild.BuildOptions{

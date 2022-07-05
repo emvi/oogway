@@ -56,6 +56,11 @@ func compileSass(dir string) {
 
 		out := filepath.Join(dir, cfg.Sass.Out)
 
+		if err := os.MkdirAll(filepath.Join(dir, filepath.Dir(cfg.Sass.Out)), 0744); err != nil {
+			log.Printf("Error creating css output directory: %s", err)
+			return
+		}
+
 		if err := os.WriteFile(out, []byte(result.CSS), 0644); err != nil {
 			log.Printf("Error writing css file '%s': %s", out, err)
 			return
