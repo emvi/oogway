@@ -44,6 +44,11 @@ entrypoint = "entrypoint.js"
 out = "assets/bundle.js"
 out_source_map = "assets/bundle.js.map"
 watch = true
+
+# optional configuration for pirsch.io
+[pirsch]
+client_id = "..." # optional when using a single access token (no oAuth)
+client_secret = "..." # required
 ```
 
 After you have configured your project, you can start the server by running the `oogway` command inside the project directory, or by passing the directory path as the first parameter (like `oogway projects/website`).

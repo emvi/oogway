@@ -25,6 +25,7 @@ type Config struct {
 	Content ContentConfig
 	Sass    SassConfig
 	JS      JSConfig
+	Pirsch  PirschConfig `toml:"pirsch"`
 }
 
 // ServerConfig is the HTTP server configuration.
@@ -57,6 +58,12 @@ type JSConfig struct {
 	Watch      bool   `toml:"watch"`
 	Out        string `toml:"out"`
 	SourceMap  bool   `toml:"source_map"`
+}
+
+// PirschConfig is the configuration for pirsch.io.
+type PirschConfig struct {
+	ClientID     string `toml:"client_id"`
+	ClientSecret string `toml:"client_secret"`
 }
 
 func loadConfig(dir string) error {

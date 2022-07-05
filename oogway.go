@@ -65,6 +65,7 @@ func Start(dir string, funcMap template.FuncMap) error {
 		return err
 	}
 
+	initPirsch()
 	router := setupRouter(dir)
 	<-startServer(router, cancel)
 	return nil

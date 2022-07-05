@@ -163,6 +163,8 @@ func renderPage(w http.ResponseWriter, r *http.Request) {
 			tpl = routes.findTemplate(path)
 
 			if tpl != nil {
+				go pageView(r, cfg.Content.NotFound)
+
 				if err := tpl.Execute(w, nil); err != nil {
 					log.Printf("Error rendering page %s: %s", r.URL.Path, err)
 					w.WriteHeader(http.StatusInternalServerError)
@@ -172,6 +174,8 @@ func renderPage(w http.ResponseWriter, r *http.Request) {
 
 		return
 	}
+
+	go pageView(r, "")
 
 	if err := tpl.Execute(w, nil); err != nil {
 		log.Printf("Error rendering page %s: %s", r.URL.Path, err)
