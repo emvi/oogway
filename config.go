@@ -62,8 +62,10 @@ type JSConfig struct {
 
 // PirschConfig is the configuration for pirsch.io.
 type PirschConfig struct {
-	ClientID     string `toml:"client_id"`
-	ClientSecret string `toml:"client_secret"`
+	ClientID     string   `toml:"client_id"`
+	ClientSecret string   `toml:"client_secret"`
+	Subnets      []string `toml:"subnets"`
+	Header       []string `toml:"header"`
 }
 
 func loadConfig(dir string) error {

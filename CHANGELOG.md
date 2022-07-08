@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.0.0
+
+* added support for Pirsch headers and subnets
+
 ## 0.5 beta
 
 * added Pirsch backend integration
