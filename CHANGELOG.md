@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.1.0
+
+* updated dependencies
+
 ## 1.0.0
 
 * added support for Pirsch headers and subnets
