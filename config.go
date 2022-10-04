@@ -8,7 +8,7 @@ import (
 	"path/filepath"
 
 	"github.com/BurntSushi/toml"
-	"github.com/rjeczalik/notify"
+	"github.com/fsnotify/fsnotify"
 )
 
 const (
@@ -21,20 +21,20 @@ var (
 
 // Config is the Oogway application config.
 type Config struct {
-	Server  ServerConfig
-	Content ContentConfig
-	Sass    SassConfig
-	JS      JSConfig
-	Pirsch  PirschConfig `toml:"pirsch"`
+	Server  ServerConfig  `toml:"server"`
+	Content ContentConfig `toml:"content"`
+	Sass    SassConfig    `toml:"sass"`
+	JS      JSConfig      `toml:"js"`
+	Pirsch  PirschConfig  `toml:"pirsch"`
 }
 
 // ServerConfig is the HTTP server configuration.
 type ServerConfig struct {
-	Host            string
-	Port            int
-	ShutdownTimeout int `toml:"shutdown_time"`
-	WriteTimeout    int `toml:"write_timeout"`
-	ReadTimeout     int `toml:"read_timeout"`
+	Host            string `toml:"host"`
+	Port            int    `toml:"port"`
+	ShutdownTimeout int    `toml:"shutdown_time"`
+	WriteTimeout    int    `toml:"write_timeout"`
+	ReadTimeout     int    `toml:"read_timeout"`
 }
 
 // ContentConfig is the content configuration.
@@ -49,6 +49,7 @@ type SassConfig struct {
 	Watch        bool   `toml:"watch"`
 	Out          string `toml:"out"`
 	OutSourceMap string `toml:"out_source_map"`
+	Compiler     string `toml:"compiler"`
 }
 
 // JSConfig is the JavaScript compiler configuration.
@@ -106,23 +107,33 @@ func watchConfig(ctx context.Context, dir string) error {
 		return err
 	}
 
-	change := make(chan notify.EventInfo, 1)
+	watcher, err := fsnotify.NewWatcher()
+
+	if err != nil {
+		return err
+	}
 
 	go func() {
 		for {
 			select {
-			case <-change:
-				if err := loadConfig(dir); err != nil {
-					log.Printf("Error updating config.toml: %s", err)
+			case event, ok := <-watcher.Events:
+				if !ok {
+					continue
+				}
+
+				if event.Op == fsnotify.Write {
+					if err := loadConfig(dir); err != nil {
+						log.Printf("Error updating config.toml: %s", err)
+					}
 				}
 			case <-ctx.Done():
-				notify.Stop(change)
+				watcher.Close()
 				return
 			}
 		}
 	}()
 
-	if err := notify.Watch(filepath.Join(dir, configFile), change, notify.Write); err != nil {
+	if err := watcher.Add(filepath.Join(dir, configFile)); err != nil {
 		return err
 	}
 

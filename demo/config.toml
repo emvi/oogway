@@ -11,6 +11,7 @@ entrypoint = "style.scss"
 out = "assets/style.css"
 out_source_map = "assets/style.css.map"
 watch = true
+compiler = "C:/Users/marvi/sass_embedded/dart-sass-embedded.bat"
 
 [js]
 dir = "assets"

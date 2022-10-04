@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.2.0
+
+* added Mac support
+* added configuration option to set the Sass compiler filename or path
+* fixed watching files on Windows
+* updated dependencies
+
 ## 1.1.0
 
 * updated dependencies

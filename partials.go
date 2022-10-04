@@ -9,7 +9,7 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/rjeczalik/notify"
+	"github.com/fsnotify/fsnotify"
 )
 
 const (
@@ -45,23 +45,31 @@ func watchPartials(ctx context.Context, dir string, funcMap template.FuncMap) er
 		return err
 	}
 
-	change := make(chan notify.EventInfo, 1)
+	watcher, err := fsnotify.NewWatcher()
+
+	if err != nil {
+		return err
+	}
 
 	go func() {
 		for {
 			select {
-			case <-change:
+			case _, ok := <-watcher.Events:
+				if !ok {
+					continue
+				}
+
 				if err := loadPartials(dir, funcMap); err != nil {
 					log.Printf("Error updating partials: %s", err)
 				}
 			case <-ctx.Done():
-				notify.Stop(change)
+				watcher.Close()
 				return
 			}
 		}
 	}()
 
-	if err := notify.Watch(filepath.Join(dir, partialsDir, "..."), change, notify.All); err != nil {
+	if err := watcher.Add(filepath.Join(dir, partialsDir)); err != nil {
 		return err
 	}
 

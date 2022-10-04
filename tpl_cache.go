@@ -62,6 +62,7 @@ func (cache *tplCache) clear() {
 }
 
 func (cache *tplCache) getTemplateName(path string) string {
+	path = strings.ReplaceAll(path, "\\", "/")
 	base := removeBasePath.FindStringSubmatch(path)
 
 	if len(base) != 2 {
@@ -81,9 +82,7 @@ func (cache *tplCache) getTemplateName(path string) string {
 			path = "/" + path
 		}
 	} else if strings.HasSuffix(base[1], partialsDir) {
-		if strings.HasSuffix(path, ".html") {
-			path = path[:len(path)-len(".html")]
-		}
+		path = strings.TrimSuffix(path, ".html")
 	}
 
 	return path

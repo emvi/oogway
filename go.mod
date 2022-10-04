@@ -7,10 +7,10 @@ require (
 	github.com/Masterminds/sprig v2.22.0+incompatible
 	github.com/NYTimes/gziphandler v1.1.1
 	github.com/bep/godartsass v0.14.0
-	github.com/evanw/esbuild v0.15.9
+	github.com/evanw/esbuild v0.15.10
+	github.com/fsnotify/fsnotify v1.5.4
 	github.com/gorilla/mux v1.8.0
 	github.com/pirsch-analytics/pirsch-go-sdk v1.8.0
-	github.com/rjeczalik/notify v0.9.2
 	github.com/russross/blackfriday/v2 v2.1.0
 	github.com/stretchr/testify v1.8.0
 )
@@ -28,7 +28,7 @@ require (
 	github.com/mitchellh/reflectwalk v1.0.2 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	golang.org/x/crypto v0.0.0-20220926161630-eccd6366d1be // indirect
-	golang.org/x/sys v0.0.0-20220927170352-d9d178bc13c6 // indirect
+	golang.org/x/sys v0.0.0-20220928140112-f11e5e49a4ec // indirect
 	google.golang.org/protobuf v1.28.1 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )

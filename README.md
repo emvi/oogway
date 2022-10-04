@@ -36,6 +36,7 @@ entrypoint = "style.scss" # main sass file
 out = "assets/style.css" # compiled output css file path
 out_source_map = "assets/style.css.map" # css map file (optional)
 watch = true # re-compile files when changed
+compiler = "dart" # optional configuration to set the sass compiler filename (if in $PATH) or path (if not in $PATH)
 
 # optional configuration to compile js/ts (see sass configuration for reference)
 [js]
