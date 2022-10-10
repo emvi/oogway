@@ -110,8 +110,14 @@ func startServer(handler http.Handler, cancel context.CancelFunc) chan struct{} 
 	done := make(chan struct{})
 
 	go func() {
-		if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
-			log.Fatalf("Error starting server: %s", err)
+		if cfg.Server.TLSCertFile != "" && cfg.Server.TLSKeyFile != "" {
+			if err := server.ListenAndServeTLS(cfg.Server.TLSCertFile, cfg.Server.TLSKeyFile); err != nil {
+				log.Fatalf("Error starting server: %s", err)
+			}
+		} else {
+			if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+				log.Fatalf("Error starting server: %s", err)
+			}
 		}
 
 		done <- struct{}{}

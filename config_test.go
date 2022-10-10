@@ -17,6 +17,8 @@ port = 8080
 shutdown_time = 9
 write_timeout = 10
 read_timeout = 11
+tls_cert_file = "cert/file.pem"
+tls_key_file = "key/file.pem"
 
 [content]
 not_found = "not-found"
@@ -52,6 +54,8 @@ func TestLoadConfig(t *testing.T) {
 	assert.Equal(t, 9, cfg.Server.ShutdownTimeout)
 	assert.Equal(t, 10, cfg.Server.WriteTimeout)
 	assert.Equal(t, 11, cfg.Server.ReadTimeout)
+	assert.Equal(t, "cert/file.pem", cfg.Server.TLSCertFile)
+	assert.Equal(t, "key/file.pem", cfg.Server.TLSKeyFile)
 	assert.Equal(t, "not-found", cfg.Content.NotFound)
 	assert.Equal(t, "style.scss", cfg.Sass.Entrypoint)
 	assert.Equal(t, "assets/scss", cfg.Sass.Dir)

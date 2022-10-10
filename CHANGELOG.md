@@ -4,6 +4,7 @@
 
 * added Mac support
 * added configuration option to set the Sass compiler filename or path
+* added TLS support
 * fixed watching files on Windows
 * updated dependencies
 
