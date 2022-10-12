@@ -97,5 +97,5 @@ func renderMarkdown(file string, data interface{}) template.HTML {
 		return ""
 	}
 
-	return template.HTML(blackfriday.Run(buffer.Bytes()))
+	return template.HTML(blackfriday.Run(buffer.Bytes(), blackfriday.WithExtensions(blackfriday.NoIntraEmphasis)))
 }
