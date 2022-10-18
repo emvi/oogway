@@ -14,6 +14,22 @@ After that, you can call Oogway from the command line using the `oogway` command
 * `oogway run <path>` will start Oogway in the given directory
 * `oogway init <path>` will initialize a new project in the given directory
 
+Or through Docker:
+
+```yaml
+version: "3"
+
+services:
+  oogway:
+    image: emvicom/oogway
+    container_name: oogway
+    restart: unless-stopped
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./demo:/app/data
+```
+
 ## Configuration
 
 Oogway is configured using a single `config.toml` file in the project directory.
