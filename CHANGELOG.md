@@ -6,6 +6,7 @@
 * added configuration option to set the Sass compiler filename or path
 * added TLS support
 * added intra-word emphasis suppression
+* added Docker image
 * fixed watching files on Windows
 * updated dependencies
 
