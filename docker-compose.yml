@@ -2,7 +2,7 @@ version: "3"
 
 services:
   oogway:
-    image: emvi/oogway
+    image: emvicom/oogway
     container_name: oogway
     restart: unless-stopped
     ports:
