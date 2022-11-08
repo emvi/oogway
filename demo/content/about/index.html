@@ -1,7 +1,8 @@
 {{partial "head" .}}
 
 <main>
-    {{markdown "content/about/about.md" .}}
+    {{markdownBlock "content/about/about.md" "content" .}}
+    {{markdownBlock "content/about/about.md" "footer" .}}
 </main>
 
 {{partial "end" .}}

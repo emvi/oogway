@@ -103,6 +103,7 @@ Oogway comes with a bunch of template functions that can be used to build pages.
 | content | Renders a template for given data. Use the route for the template name | `{{content "/about" .}}` |
 | partial | Renders a partial template for given data. Use the filename without the file extension. | `{{partial "head" .}}` |
 | markdown | Renders given markdown file as HTML using Go text templates. Use the full path for the template name. | `{{markdown "content/blog/article.md" .}}` |
+| markdownBlock | Renders a block from given markdown file as HTML using Go text templates. Use the full path for the template name. | `{{markdownBlock "content/blog/article.md" "blockName" .}}` |
 
 For more functions, check out the [Sprig documentation](github.com/Masterminds/sprig).
 
