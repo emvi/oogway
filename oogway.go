@@ -3,13 +3,14 @@ package oogway
 import (
 	"context"
 	"fmt"
-	"github.com/gorilla/mux"
 	"html/template"
 	"log"
 	"net/http"
 	"os"
 	"os/signal"
 	"time"
+
+	"github.com/gorilla/mux"
 )
 
 const (
@@ -22,7 +23,7 @@ const (
    \ \_______\ \_______\ \_______\ \____________\ \__\ \__\__/  / /    
     \|_______|\|_______|\|_______|\|____________|\|__|\|__|\___/ /     
                                                           \|___|/
-v1.1.0`
+v1.2.0`
 )
 
 var (
@@ -42,6 +43,8 @@ func Start(dir string, funcMap template.FuncMap) error {
 		cancel()
 		return err
 	}
+
+	initSass()
 
 	if err := watchSass(ctx, dir); err != nil {
 		cancel()
@@ -107,8 +110,14 @@ func startServer(handler http.Handler, cancel context.CancelFunc) chan struct{} 
 	done := make(chan struct{})
 
 	go func() {
-		if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
-			log.Fatalf("Error starting server: %s", err)
+		if cfg.Server.TLSCertFile != "" && cfg.Server.TLSKeyFile != "" {
+			if err := server.ListenAndServeTLS(cfg.Server.TLSCertFile, cfg.Server.TLSKeyFile); err != nil {
+				log.Fatalf("Error starting server: %s", err)
+			}
+		} else {
+			if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+				log.Fatalf("Error starting server: %s", err)
+			}
 		}
 
 		done <- struct{}{}

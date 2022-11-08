@@ -2,7 +2,6 @@ package oogway
 
 import (
 	"context"
-	"github.com/BurntSushi/toml"
 	"html/template"
 	"io/fs"
 	"log"
@@ -13,9 +12,11 @@ import (
 	"strings"
 	"time"
 
+	"github.com/BurntSushi/toml"
+	"github.com/fsnotify/fsnotify"
+
 	"github.com/NYTimes/gziphandler"
 	"github.com/gorilla/mux"
-	"github.com/rjeczalik/notify"
 )
 
 const (
@@ -55,6 +56,7 @@ func loadContent(dir string, funcMap template.FuncMap) error {
 			}
 
 			route := filepath.Dir(path)[len(contentDirPath):] + "/"
+			route = strings.ReplaceAll(route, "\\", "/")
 			routes.addRoute(route, tpl)
 			m := loadMetaInformation(filepath.Dir(path))
 			sitemapPriority := m.SitemapPriority
@@ -85,23 +87,31 @@ func watchContent(ctx context.Context, dir string, funcMap template.FuncMap) err
 		return err
 	}
 
-	change := make(chan notify.EventInfo, 1)
+	watcher, err := fsnotify.NewWatcher()
+
+	if err != nil {
+		return err
+	}
 
 	go func() {
 		for {
 			select {
-			case <-change:
+			case _, ok := <-watcher.Events:
+				if !ok {
+					continue
+				}
+
 				if err := loadContent(dir, funcMap); err != nil {
 					log.Printf("Error updating content: %s", err)
 				}
 			case <-ctx.Done():
-				notify.Stop(change)
+				watcher.Close()
 				return
 			}
 		}
 	}()
 
-	if err := notify.Watch(filepath.Join(dir, contentDir, "..."), change, notify.All); err != nil {
+	if err := watcher.Add(filepath.Join(dir, contentDir)); err != nil {
 		return err
 	}
 

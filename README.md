@@ -14,6 +14,22 @@ After that, you can call Oogway from the command line using the `oogway` command
 * `oogway run <path>` will start Oogway in the given directory
 * `oogway init <path>` will initialize a new project in the given directory
 
+Or through Docker:
+
+```yaml
+version: "3"
+
+services:
+  oogway:
+    image: emvicom/oogway
+    container_name: oogway
+    restart: unless-stopped
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./demo:/app/data
+```
+
 ## Configuration
 
 Oogway is configured using a single `config.toml` file in the project directory.
@@ -36,6 +52,7 @@ entrypoint = "style.scss" # main sass file
 out = "assets/style.css" # compiled output css file path
 out_source_map = "assets/style.css.map" # css map file (optional)
 watch = true # re-compile files when changed
+compiler = "dart" # optional configuration to set the sass compiler filename (if in $PATH) or path (if not in $PATH)
 
 # optional configuration to compile js/ts (see sass configuration for reference)
 [js]
@@ -86,6 +103,7 @@ Oogway comes with a bunch of template functions that can be used to build pages.
 | content | Renders a template for given data. Use the route for the template name | `{{content "/about" .}}` |
 | partial | Renders a partial template for given data. Use the filename without the file extension. | `{{partial "head" .}}` |
 | markdown | Renders given markdown file as HTML using Go text templates. Use the full path for the template name. | `{{markdown "content/blog/article.md" .}}` |
+| markdownBlock | Renders a block from given markdown file as HTML using Go text templates. Use the full path for the template name. | `{{markdownBlock "content/blog/article.md" "blockName" .}}` |
 
 For more functions, check out the [Sprig documentation](github.com/Masterminds/sprig).
 

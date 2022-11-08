@@ -2,25 +2,32 @@ package oogway
 
 import (
 	"context"
-	"github.com/bep/godartsass"
-	"github.com/rjeczalik/notify"
 	"io/fs"
 	"log"
 	"os"
 	"path/filepath"
 	"strings"
+
+	"github.com/bep/godartsass"
+	"github.com/fsnotify/fsnotify"
 )
 
 var (
 	sass *godartsass.Transpiler
 )
 
-func init() {
+func initSass() {
 	var err error
-	sass, err = godartsass.Start(godartsass.Options{})
+	sass, err = godartsass.Start(godartsass.Options{
+		DartSassEmbeddedFilename: cfg.Sass.Compiler,
+	})
 
 	if err != nil {
 		log.Printf("Error setting up sass compiler: %s. Oogway will still work, but sass compilation won't be available.", err)
+
+		if cfg.Sass.Compiler != "" {
+			log.Printf("Sass compiler path: %s", cfg.Sass.Compiler)
+		}
 	}
 }
 
@@ -81,25 +88,37 @@ func watchSass(ctx context.Context, dir string) error {
 		compileSass(dir)
 
 		if cfg.Sass.Watch {
-			change := make(chan notify.EventInfo, 1)
+			watcher, err := fsnotify.NewWatcher()
+
+			if err != nil {
+				return err
+			}
 
 			go func() {
+				out := filepath.Join(dir, cfg.Sass.Out)
+
 				for {
 					select {
-					case event := <-change:
-						ext := strings.ToLower(filepath.Ext(event.Path()))
+					case event, ok := <-watcher.Events:
+						if !ok {
+							continue
+						}
 
-						if ext == ".scss" || ext == ".sass" {
-							compileSass(dir)
+						if event.Op == fsnotify.Write && event.Name != out {
+							ext := strings.ToLower(filepath.Ext(event.Name))
+
+							if ext == ".scss" || ext == ".sass" {
+								compileSass(dir)
+							}
 						}
 					case <-ctx.Done():
-						notify.Stop(change)
+						watcher.Close()
 						return
 					}
 				}
 			}()
 
-			if err := notify.Watch(filepath.Join(dir, cfg.Sass.Dir, "..."), change, notify.Write); err != nil {
+			if err := watcher.Add(filepath.Join(dir, cfg.Sass.Dir)); err != nil {
 				return err
 			}
 		}

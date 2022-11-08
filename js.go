@@ -2,12 +2,13 @@ package oogway
 
 import (
 	"context"
-	esbuild "github.com/evanw/esbuild/pkg/api"
-	"github.com/rjeczalik/notify"
 	"log"
 	"os"
 	"path/filepath"
 	"strings"
+
+	esbuild "github.com/evanw/esbuild/pkg/api"
+	"github.com/fsnotify/fsnotify"
 )
 
 func compileJS(dir string) {
@@ -49,33 +50,37 @@ func watchJS(ctx context.Context, dir string) error {
 		compileJS(dir)
 
 		if cfg.JS.Watch {
-			bundle, err := filepath.Abs(filepath.Join(dir, cfg.JS.Out))
+			watcher, err := fsnotify.NewWatcher()
 
 			if err != nil {
 				return err
 			}
 
-			change := make(chan notify.EventInfo, 1)
-
 			go func() {
+				out := filepath.Join(dir, cfg.JS.Out)
+
 				for {
 					select {
-					case event := <-change:
-						if event.Path() != bundle {
-							ext := strings.ToLower(filepath.Ext(event.Path()))
+					case event, ok := <-watcher.Events:
+						if !ok {
+							continue
+						}
+
+						if event.Op == fsnotify.Write && event.Name != out {
+							ext := strings.ToLower(filepath.Ext(event.Name))
 
 							if ext == ".js" || ext == ".ts" || ext == ".tsx" || ext == ".mts" || ext == ".cts" {
 								compileJS(dir)
 							}
 						}
 					case <-ctx.Done():
-						notify.Stop(change)
+						watcher.Close()
 						return
 					}
 				}
 			}()
 
-			if err := notify.Watch(filepath.Join(dir, cfg.JS.Dir, "..."), change, notify.Write); err != nil {
+			if err := watcher.Add(filepath.Join(dir, cfg.JS.Dir)); err != nil {
 				return err
 			}
 		}
