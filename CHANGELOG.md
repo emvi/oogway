@@ -7,6 +7,7 @@
 * added TLS support
 * added intra-word emphasis suppression
 * added Docker image
+* added support for blocks in markdown
 * fixed watching files on Windows
 * updated dependencies
 

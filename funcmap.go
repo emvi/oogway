@@ -14,15 +14,16 @@ import (
 
 var (
 	defaultFuncMap = template.FuncMap{
-		"config":   func() Config { return cfg },
-		"content":  renderContent,
-		"partial":  renderPartial,
-		"markdown": renderMarkdown,
+		"config":        func() Config { return cfg },
+		"content":       renderContent,
+		"partial":       renderPartial,
+		"markdown":      renderMarkdown,
+		"markdownBlock": renderMarkdownBlock,
 	}
 )
 
 func mergeFuncMaps(maps ...template.FuncMap) template.FuncMap {
-	out := make(map[string]interface{})
+	out := make(map[string]any)
 
 	for k, v := range sprig.FuncMap() {
 		out[k] = v
@@ -43,7 +44,7 @@ func mergeFuncMaps(maps ...template.FuncMap) template.FuncMap {
 	return out
 }
 
-func renderContent(tpl string, data interface{}) template.HTML {
+func renderContent(tpl string, data any) template.HTML {
 	c := content.get(tpl)
 
 	if c == nil {
@@ -59,7 +60,7 @@ func renderContent(tpl string, data interface{}) template.HTML {
 	return template.HTML(buffer.String())
 }
 
-func renderPartial(tpl string, data interface{}) template.HTML {
+func renderPartial(tpl string, data any) template.HTML {
 	partial := partials.get(tpl)
 
 	if partial == nil {
@@ -75,7 +76,7 @@ func renderPartial(tpl string, data interface{}) template.HTML {
 	return template.HTML(buffer.String())
 }
 
-func renderMarkdown(file string, data interface{}) template.HTML {
+func renderMarkdown(file string, data any) template.HTML {
 	content, err := os.ReadFile(filepath.Join(baseDir, file))
 
 	if err != nil {
@@ -83,7 +84,22 @@ func renderMarkdown(file string, data interface{}) template.HTML {
 		return ""
 	}
 
-	tpl, err := tt.New("").Funcs(tt.FuncMap(tplFuncMap)).Parse(string(content))
+	return renderMarkdownContent(file, string(content), "", data)
+}
+
+func renderMarkdownBlock(file, block string, data any) template.HTML {
+	content, err := os.ReadFile(filepath.Join(baseDir, file))
+
+	if err != nil {
+		log.Printf("Error loading markdown file '%s': %s", file, err)
+		return ""
+	}
+
+	return renderMarkdownContent(file, string(content), block, data)
+}
+
+func renderMarkdownContent(file, content, block string, data any) template.HTML {
+	tpl, err := tt.New("").Funcs(tt.FuncMap(tplFuncMap)).Parse(content)
 
 	if err != nil {
 		log.Printf("Error parsing markdown file '%s': %s", file, err)
@@ -91,6 +107,20 @@ func renderMarkdown(file string, data interface{}) template.HTML {
 	}
 
 	var buffer bytes.Buffer
+
+	if block != "" {
+		if _, err := tpl.Parse(fmt.Sprintf(`{{template "%s" .}}`, block)); err != nil {
+			log.Printf("Error parsing markdown block '%s' in file '%s': %s", block, file, err)
+			return ""
+		}
+
+		if err := tpl.Execute(&buffer, data); err != nil {
+			log.Printf("Error rendering markdown file '%s': %s", file, err)
+			return ""
+		}
+
+		return template.HTML(blackfriday.Run(buffer.Bytes(), blackfriday.WithExtensions(blackfriday.NoIntraEmphasis)))
+	}
 
 	if err := tpl.Execute(&buffer, data); err != nil {
 		log.Printf("Error rendering markdown file '%s': %s", file, err)

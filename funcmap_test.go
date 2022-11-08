@@ -61,3 +61,17 @@ func TestRenderMarkdown(t *testing.T) {
 	})
 	assert.Equal(t, template.HTML("<h1>Test var</h1>\n"), out)
 }
+
+func TestRenderMarkdownBlock(t *testing.T) {
+	assert.NoError(t, os.RemoveAll(contentDir))
+	assert.NoError(t, os.Mkdir(contentDir, 0777))
+	file := filepath.Join(contentDir, "test.md")
+	assert.NoError(t, os.WriteFile(file, []byte(`{{define "foo"}}# Test {{.Var}}{{end}}{{define "bar"}}## Hello World{{end}}`), 0777))
+	time.Sleep(time.Millisecond * 10)
+	out := renderMarkdownBlock(file, "bar", struct {
+		Var string
+	}{
+		"var",
+	})
+	assert.Equal(t, template.HTML("<h2>Hello World</h2>\n"), out)
+}
