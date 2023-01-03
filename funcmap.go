@@ -3,13 +3,14 @@ package oogway
 import (
 	"bytes"
 	"fmt"
-	"github.com/Masterminds/sprig"
-	"github.com/russross/blackfriday/v2"
 	"html/template"
 	"log"
 	"os"
 	"path/filepath"
 	tt "text/template"
+
+	"github.com/Masterminds/sprig"
+	"github.com/russross/blackfriday/v2"
 )
 
 var (
@@ -119,7 +120,9 @@ func renderMarkdownContent(file, content, block string, data any) template.HTML 
 			return ""
 		}
 
-		return template.HTML(blackfriday.Run(buffer.Bytes(), blackfriday.WithExtensions(blackfriday.NoIntraEmphasis)))
+		return template.HTML(blackfriday.Run(buffer.Bytes(),
+			blackfriday.WithExtensions(blackfriday.NoIntraEmphasis),
+			blackfriday.WithExtensions(blackfriday.Footnotes)))
 	}
 
 	if err := tpl.Execute(&buffer, data); err != nil {
@@ -127,5 +130,7 @@ func renderMarkdownContent(file, content, block string, data any) template.HTML 
 		return ""
 	}
 
-	return template.HTML(blackfriday.Run(buffer.Bytes(), blackfriday.WithExtensions(blackfriday.NoIntraEmphasis)))
+	return template.HTML(blackfriday.Run(buffer.Bytes(),
+		blackfriday.WithExtensions(blackfriday.NoIntraEmphasis),
+		blackfriday.WithExtensions(blackfriday.Footnotes)))
 }

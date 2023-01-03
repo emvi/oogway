@@ -2,6 +2,7 @@
 
 ## 1.2.1
 
+* added Markdown footnote extension
 * updated dependencies
 
 ## 1.2.0
