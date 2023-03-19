@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.2.3
+
+* switched from blackfriday to goldmark
+
 ## 1.2.2
 
 * updated dependencies

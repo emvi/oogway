@@ -11,8 +11,8 @@ require (
 	github.com/fsnotify/fsnotify v1.6.0
 	github.com/gorilla/mux v1.8.0
 	github.com/pirsch-analytics/pirsch-go-sdk v1.8.0
-	github.com/russross/blackfriday/v2 v2.1.0
 	github.com/stretchr/testify v1.8.2
+	github.com/yuin/goldmark v1.5.4
 )
 
 require (

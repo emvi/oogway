@@ -3,14 +3,14 @@ package oogway
 import (
 	"bytes"
 	"fmt"
+	"github.com/Masterminds/sprig"
+	"github.com/yuin/goldmark"
+	"github.com/yuin/goldmark/extension"
 	"html/template"
 	"log"
 	"os"
 	"path/filepath"
 	tt "text/template"
-
-	"github.com/Masterminds/sprig"
-	"github.com/russross/blackfriday/v2"
 )
 
 var (
@@ -100,14 +100,22 @@ func renderMarkdownBlock(file, block string, data any) template.HTML {
 }
 
 func renderMarkdownContent(file, content, block string, data any) template.HTML {
-	tpl, err := tt.New("").Funcs(tt.FuncMap(tplFuncMap)).Parse(content)
+	tpl, err := tt.New("").Funcs(tplFuncMap).Parse(content)
 
 	if err != nil {
 		log.Printf("Error parsing markdown file '%s': %s", file, err)
 		return ""
 	}
 
-	var buffer bytes.Buffer
+	var buffer, out bytes.Buffer
+	converter := goldmark.New(
+		goldmark.WithExtensions(
+			extension.NewFootnote(),
+			extension.NewTable(),
+			extension.Strikethrough,
+			extension.TaskList,
+		),
+	)
 
 	if block != "" {
 		if _, err := tpl.Parse(fmt.Sprintf(`{{template "%s" .}}`, block)); err != nil {
@@ -120,9 +128,11 @@ func renderMarkdownContent(file, content, block string, data any) template.HTML 
 			return ""
 		}
 
-		return template.HTML(blackfriday.Run(buffer.Bytes(),
-			blackfriday.WithExtensions(blackfriday.NoIntraEmphasis),
-			blackfriday.WithExtensions(blackfriday.Footnotes)))
+		if err := converter.Convert(buffer.Bytes(), &out); err != nil {
+			panic(err)
+		}
+
+		return template.HTML(out.String())
 	}
 
 	if err := tpl.Execute(&buffer, data); err != nil {
@@ -130,7 +140,9 @@ func renderMarkdownContent(file, content, block string, data any) template.HTML 
 		return ""
 	}
 
-	return template.HTML(blackfriday.Run(buffer.Bytes(),
-		blackfriday.WithExtensions(blackfriday.NoIntraEmphasis),
-		blackfriday.WithExtensions(blackfriday.Footnotes)))
+	if err := converter.Convert(buffer.Bytes(), &out); err != nil {
+		panic(err)
+	}
+
+	return template.HTML(out.String())
 }
