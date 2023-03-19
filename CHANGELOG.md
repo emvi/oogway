@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.2.2
+
+* updated dependencies
+
 ## 1.2.1
 
 * added Markdown footnote extension
