@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.3.0
+
+* added rendering HTML to Markdown
+* refactored code into its own module
+
 ## 1.2.3
 
 * switched from blackfriday to goldmark

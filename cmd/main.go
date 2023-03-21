@@ -1,11 +1,10 @@
 package main
 
 import (
+	"github.com/emvi/oogway/oogway"
 	"log"
 	"os"
 	"strings"
-
-	"github.com/emvi/oogway"
 )
 
 const (
