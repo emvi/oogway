@@ -13,7 +13,7 @@ if [ "$platform" = 'mac' ]; then
 elif [ "$platform" = 'windows' ]; then
   GOOS=windows GOARCH=amd64 go build -a -installsuffix cgo -ldflags "-s -w" -o oogway.exe cmd/main.go || exit 1
 else
-  GOOS=linux GOARCH=amd64 go build -a -installsuffix cgo -ldflags "-s -w" -o oogway cmd/main.go || exit 1
+  GOOS=linux GOARCH=amd64 go build -a -installsuffix cgo -ldflags "-s -w" cmd/main.go || exit 1
 fi
 
 echo "Done!"
