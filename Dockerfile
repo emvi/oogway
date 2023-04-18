@@ -23,3 +23,5 @@ COPY --from=build /app /app
 VOLUME ["/app/data"]
 EXPOSE 8080
 ENTRYPOINT ["/app/oogway", "run", "/app/data"]
+
+HEALTHCHECK CMD wget 127.0.0.1:8080/ --spider -q
