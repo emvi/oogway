@@ -2,84 +2,52 @@ package oogway
 
 import (
 	"context"
+	"fmt"
+	"github.com/fsnotify/fsnotify"
 	"io/fs"
 	"log"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"strings"
-
-	"github.com/bep/godartsass"
-	"github.com/fsnotify/fsnotify"
 )
-
-var (
-	sass *godartsass.Transpiler
-)
-
-func initSass() {
-	var err error
-	sass, err = godartsass.Start(godartsass.Options{
-		DartSassEmbeddedFilename: cfg.Sass.Compiler,
-	})
-
-	if err != nil {
-		log.Printf("Error setting up sass compiler: %s. Oogway will still work, but sass compilation won't be available.", err)
-
-		if cfg.Sass.Compiler != "" {
-			log.Printf("Sass compiler path: %s", cfg.Sass.Compiler)
-		}
-	}
-}
 
 func compileSass(dir string) {
-	if sass != nil {
-		in := filepath.Join(dir, cfg.Sass.Dir, cfg.Sass.Entrypoint)
-		log.Printf("Compiling sass file: %s", in)
-		content, err := os.ReadFile(in)
+	if err := os.MkdirAll(filepath.Join(dir, filepath.Dir(cfg.Sass.Out)), 0744); err != nil {
+		log.Printf("Error creating css output directory: %s", err)
+		return
+	}
 
-		if err != nil {
-			log.Printf("Error loading sass file '%s': %s", in, err)
-			return
-		}
+	in := filepath.Join(dir, cfg.Sass.Dir, cfg.Sass.Entrypoint)
+	out := filepath.Join(dir, cfg.Sass.Out)
+	log.Printf("Compiling sass file '%s' to '%s'", in, out)
+	dirs, err := getDirs(filepath.Join(dir, cfg.Sass.Dir))
 
-		dirs, err := getDirs(filepath.Join(dir, cfg.Sass.Dir))
+	if err != nil {
+		log.Printf("Error reading sass directory: %s", err)
+		return
+	}
 
-		if err != nil {
-			log.Printf("Error reading sass directory: %s", err)
-			return
-		}
+	args := make([]string, 0)
 
-		result, err := sass.Execute(godartsass.Args{
-			Source:          string(content),
-			IncludePaths:    dirs,
-			OutputStyle:     godartsass.OutputStyleCompressed,
-			EnableSourceMap: cfg.Sass.OutSourceMap != "",
-		})
+	for _, d := range dirs {
+		args = append(args, fmt.Sprintf("--load-path=%s", d))
+	}
 
-		if err != nil {
-			log.Printf("Error compiling sass: %s", err)
-			return
-		}
+	if cfg.Sass.OutSourceMap == "" {
+		args = append(args, "--no-source-map")
+	} else {
+		args = append(args, "--source-map")
+	}
 
-		out := filepath.Join(dir, cfg.Sass.Out)
+	args = append(args, "--style=compressed")
+	args = append(args, in)
+	args = append(args, out)
+	cmd := exec.Command("sass", args...)
 
-		if err := os.MkdirAll(filepath.Join(dir, filepath.Dir(cfg.Sass.Out)), 0744); err != nil {
-			log.Printf("Error creating css output directory: %s", err)
-			return
-		}
-
-		if err := os.WriteFile(out, []byte(result.CSS), 0644); err != nil {
-			log.Printf("Error writing css file '%s': %s", out, err)
-			return
-		}
-
-		if cfg.Sass.OutSourceMap != "" {
-			out = filepath.Join(dir, cfg.Sass.OutSourceMap)
-
-			if err := os.WriteFile(out, []byte(result.SourceMap), 0644); err != nil {
-				log.Printf("Error writing source map file '%s': %s", out, err)
-			}
-		}
+	if err := cmd.Run(); err != nil {
+		log.Printf("Error compiling sass: %s", err)
+		return
 	}
 }
 

@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.4.0
+
+* switched to vendoring dependencies
+* switched to plain `sass` command instead of using embedded sass
+* removed `compiler` from configuration
+* upgraded to Go version 1.21
+* updated dependencies
+
 ## 1.3.0
 
 * added rendering HTML to Markdown

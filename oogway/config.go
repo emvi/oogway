@@ -51,7 +51,6 @@ type SassConfig struct {
 	Watch        bool   `toml:"watch"`
 	Out          string `toml:"out"`
 	OutSourceMap string `toml:"out_source_map"`
-	Compiler     string `toml:"compiler"`
 }
 
 // JSConfig is the JavaScript compiler configuration.

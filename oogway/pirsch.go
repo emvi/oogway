@@ -14,7 +14,7 @@ var (
 
 func initPirsch() {
 	if cfg.Pirsch.ClientSecret != "" {
-		pirschClient = pirsch.NewClient(cfg.Pirsch.ClientID, cfg.Pirsch.ClientSecret, "", nil)
+		pirschClient = pirsch.NewClient(cfg.Pirsch.ClientID, cfg.Pirsch.ClientSecret, nil)
 		loadIPHeader()
 		loadSubnets()
 	}

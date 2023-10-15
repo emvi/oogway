@@ -1,18 +1,19 @@
 # Oogway
 
 Oogway is a simple web server and framework with dynamic content generation using the Go template syntax.
-It's somewhere in between a static site generator and building a website manually.
-Templates are automatically updated and JavaScript/TypeScript and Sass can be compiled on the fly, allowing for a quick local dev experience.
-Oogway can also be used as a library in your Go application to add template functions and custom behaviour.
+It's somewhere between a static site generator and manually building a website.
+Templates are updated automatically and JavaScript/TypeScript and Sass can be compiled on the fly, allowing for a fast local development experience.
+Oogway can also be used as a library in your Go application to add template functionality and custom behavior.
 
 ## Installation and Setup
 
-Download the latest release for your platform from the release section on GitHub.
+Download the latest release for your platform from the releases section on GitHub.
 Move the binary to a directory in your $PATH (like `/usr/local/bin`).
-After that, you can call Oogway from the command line using the `oogway` command.
+For Sass, you need to install the `sass` command globally (`sudo npm i -g sass`).
+After that you can run Oogway from the command line with the `oogway` command.
 
-* `oogway run <path>` will start Oogway in the given directory
-* `oogway init <path>` will initialize a new project in the given directory
+* `oogway run <path>` will run Oogway in the given directory.
+* `oogway init <path>` will initialize a new project in the given directory.
 
 Or through Docker:
 
@@ -52,7 +53,6 @@ entrypoint = "style.scss" # main sass file
 out = "assets/style.css" # compiled output css file path
 out_source_map = "assets/style.css.map" # css map file (optional)
 watch = true # re-compile files when changed
-compiler = "dart" # optional configuration to set the sass compiler filename (if in $PATH) or path (if not in $PATH)
 
 # optional configuration to compile js/ts (see sass configuration for reference)
 [js]
@@ -64,7 +64,7 @@ watch = true
 
 # optional configuration for pirsch.io
 [pirsch]
-client_id = "..." # optional when using a single access token (no oAuth)
+client_id = "..." # optional when using an access key (recommended) instead of oAuth
 client_secret = "..." # required
 ```
 
@@ -72,30 +72,30 @@ After you have configured your project, you can start the server by running the 
 
 ## Structuring Your Website
 
-There are three directories that need to be created next to the `config.toml`.
+There are three directories that need to be created in addition to `config.toml
 
-* `assets` for static files, like CSS, JavaScript, or images
-* `content` for the page content and routes
-* `partials` for template files that are used on multiple pages
+* `assets` for static files like CSS, JavaScript or images
+* `content` for page content and routes
+* `partials` for template files used on multiple pages
 
-The structure in `content` is used to create routes. Each page lives inside an `index.html`.
-The home page is specified directly in the `content` directory.
-Child directories can be reached by their directory name. `content/about/index.html` for example will be available on `/about`.
-You can place other files next to the page to use them to build your content.
-Like a markdown file which will be rendered on the page, for example.
+The structure in `content` is used to create routes. Each page lives within an `index.html`.
+The start page is specified directly in the `content` directory.
+Subdirectories can be accessed by their directory names. For example, `content/about/index.html` will be accessible from `/about`.
+You can place other files next to the page to use in building your content.
+For example, a markdown file that is rendered on the page.
 
-A `meta.toml` file can be created besides each `index.html` for additional configuration.
+A `meta.toml` file can be created next to each `index.html` for additional configuration.
 
 ```toml
 # sets the priority in the sitemap.xml. Default is 1
 sitemap_priority = 0.95
 ```
 
-For a demo, check out the `demo` directory on the GitHub repository.
+You can find a demo in the `demo` directory of the GitHub repository.
 
 ## Template Functions
 
-Oogway comes with a bunch of template functions that can be used to build pages.
+Oogway comes with a number of template functions that can be used to create pages.
 
 | Function | Description | Example |
 | - | - | - |
@@ -105,13 +105,13 @@ Oogway comes with a bunch of template functions that can be used to build pages.
 | markdown | Renders given markdown file as HTML using Go text templates. Use the full path for the template name. | `{{markdown "content/blog/article.md" .}}` |
 | markdownBlock | Renders a block from given markdown file as HTML using Go text templates. Use the full path for the template name. | `{{markdownBlock "content/blog/article.md" "blockName" .}}` |
 
-For more functions, check out the [Sprig documentation](github.com/Masterminds/sprig).
+For more features, see the [Sprig documentation](github.com/Masterminds/sprig).
 
 ## Using Oogway as a Library
 
-Oogway is designed to be used as a standalone server but also as a library.
-You can add your own template functions for more advanced functionality and use-cases and embed them into your application.
-Simply `go get` it and call it anywhere in your application to boot up a web server.
+Oogway is designed to be used as a standalone server, but also as a library.
+You can add your own template functions for more advanced functionality and use cases and embed them in your application.
+Just `go get` it and call it anywhere in your application to start a web server.
 
 ```
 import (
@@ -132,13 +132,6 @@ func main() {
 		log.Printf("Error starting Oogway: %s", err)
 	}
 }
-```
-
-## Building a release
-
-```
-GOOS=linux GOARCH=amd64 go build -a -installsuffix cgo -ldflags "-s -w" -o oogway cmd/main.go
-GOOS=windows GOARCH=amd64 go build -a -installsuffix cgo -ldflags "-s -w" -o oogway.exe cmd/main.go
 ```
 
 ## License
