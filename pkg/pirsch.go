@@ -1,4 +1,4 @@
-package oogway
+package pkg
 
 import (
 	"github.com/pirsch-analytics/pirsch-go-sdk"

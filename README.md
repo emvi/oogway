@@ -115,9 +115,7 @@ Just `go get` it and call it anywhere in your application to start a web server.
 
 ```
 import (
-	"github.com/emvi/oogway"
-	
-	// other imports...
+	oogway "github.com/emvi/oogway/pkg"
 )
 
 // Define a custom FuncMap to load and render blog articles from an external source.

@@ -5,6 +5,7 @@
 * switched to vendoring dependencies
 * switched to plain `sass` command instead of using embedded sass
 * removed `compiler` from configuration
+* refactored package structure
 * upgraded to Go version 1.21
 * updated dependencies
 

@@ -2,10 +2,10 @@ FROM golang AS build
 RUN apt-get update && apt-get upgrade -y
 WORKDIR /go/src/emvi
 COPY . oogway
-RUN cd /go/src/emvi/oogway && \
+RUN cd /go/src/emvi/pkg && \
     CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -a -installsuffix cgo -ldflags "-s -w" cmd/main.go && \
     mkdir /app && \
-    mv main /app/oogway
+    mv main /app/pkg
 
 FROM alpine
 RUN apk update && \

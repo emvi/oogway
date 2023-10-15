@@ -1,7 +1,7 @@
 package main
 
 import (
-	"github.com/emvi/oogway/oogway"
+	oogway "github.com/emvi/oogway/pkg"
 	"log"
 	"os"
 	"strings"

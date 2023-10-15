@@ -1,4 +1,4 @@
-package oogway
+package pkg
 
 import (
 	"html/template"
