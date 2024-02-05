@@ -482,14 +482,14 @@ loop:
 				return
 			}
 			p.lexer.Next()
-			p.skipTypeScriptType(js_ast.LBitwiseOr)
+			p.skipTypeScriptTypeWithFlags(js_ast.LBitwiseOr, flags)
 
 		case js_lexer.TAmpersand:
 			if level >= js_ast.LBitwiseAnd {
 				return
 			}
 			p.lexer.Next()
-			p.skipTypeScriptType(js_ast.LBitwiseAnd)
+			p.skipTypeScriptTypeWithFlags(js_ast.LBitwiseAnd, flags)
 
 		case js_lexer.TExclamation:
 			// A postfix "!" is allowed in JSDoc types in TypeScript, which are only
@@ -651,6 +651,9 @@ const (
 
 	// TypeScript 5.0
 	allowConstModifier
+
+	// Allow "<>" without any type parameters
+	allowEmptyTypeParameters
 )
 
 type skipTypeScriptTypeParametersResult uint8
@@ -670,6 +673,11 @@ func (p *parser) skipTypeScriptTypeParameters(flags typeParameterFlags) skipType
 
 	p.lexer.Next()
 	result := couldBeTypeCast
+
+	if (flags&allowEmptyTypeParameters) != 0 && p.lexer.Token == js_lexer.TGreaterThan {
+		p.lexer.Next()
+		return definitelyTypeParameters
+	}
 
 	for {
 		hasIn := false
@@ -1181,7 +1189,7 @@ func (p *parser) skipTypeScriptInterfaceStmt(opts parseStmtOpts) {
 		p.localTypeNames[name] = true
 	}
 
-	p.skipTypeScriptTypeParameters(allowInOutVarianceAnnotations)
+	p.skipTypeScriptTypeParameters(allowInOutVarianceAnnotations | allowEmptyTypeParameters)
 
 	if p.lexer.Token == js_lexer.TExtends {
 		p.lexer.Next()
@@ -1256,7 +1264,7 @@ func (p *parser) skipTypeScriptTypeStmt(opts parseStmtOpts) {
 		p.localTypeNames[name] = true
 	}
 
-	p.skipTypeScriptTypeParameters(allowInOutVarianceAnnotations)
+	p.skipTypeScriptTypeParameters(allowInOutVarianceAnnotations | allowEmptyTypeParameters)
 	p.lexer.Expect(js_lexer.TEquals)
 	p.skipTypeScriptType(js_ast.LLowest)
 	p.lexer.ExpectOrInsertSemicolon()

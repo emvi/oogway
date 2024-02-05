@@ -69,6 +69,8 @@ type PathPair struct {
 	// will be "main"
 	Primary   logger.Path
 	Secondary logger.Path
+
+	IsExternal bool
 }
 
 func (pp *PathPair) iter() []*logger.Path {
@@ -114,8 +116,6 @@ type ResolveResult struct {
 
 	// This is the "type" field from "package.json"
 	ModuleTypeData js_ast.ModuleTypeData
-
-	IsExternal bool
 }
 
 type suggestionRange uint8
@@ -248,17 +248,34 @@ func NewResolver(call config.APICall, fs fs.FS, log logger.Log, caches *cache.Ca
 		}
 	}
 
-	// Sort all JavaScript file extensions after TypeScript file extensions
-	// for imports of files inside of "node_modules" directories
+	// Sort all TypeScript file extensions after all JavaScript file extensions
+	// for imports of files inside of "node_modules" directories. But insert
+	// the TypeScript file extensions right after the last JavaScript file
+	// extension instead of at the end so that they might come before the
+	// first CSS file extension, which is important to people that publish
+	// TypeScript and CSS code to npm with the same file names for both.
 	nodeModulesExtensionOrder := make([]string, 0, len(options.ExtensionOrder))
-	for _, ext := range options.ExtensionOrder {
-		if loader, ok := options.ExtensionToLoader[ext]; !ok || !loader.IsTypeScript() {
-			nodeModulesExtensionOrder = append(nodeModulesExtensionOrder, ext)
+	split := 0
+	for i, ext := range options.ExtensionOrder {
+		if loader, ok := options.ExtensionToLoader[ext]; ok && loader == config.LoaderJS || loader == config.LoaderJSX {
+			split = i + 1 // Split after the last JavaScript extension
 		}
 	}
-	for _, ext := range options.ExtensionOrder {
-		if loader, ok := options.ExtensionToLoader[ext]; ok && loader.IsTypeScript() {
-			nodeModulesExtensionOrder = append(nodeModulesExtensionOrder, ext)
+	if split != 0 { // Only do this if there are any JavaScript extensions
+		for _, ext := range options.ExtensionOrder[:split] { // Non-TypeScript extensions before the split
+			if loader, ok := options.ExtensionToLoader[ext]; !ok || !loader.IsTypeScript() {
+				nodeModulesExtensionOrder = append(nodeModulesExtensionOrder, ext)
+			}
+		}
+		for _, ext := range options.ExtensionOrder { // All TypeScript extensions
+			if loader, ok := options.ExtensionToLoader[ext]; ok && loader.IsTypeScript() {
+				nodeModulesExtensionOrder = append(nodeModulesExtensionOrder, ext)
+			}
+		}
+		for _, ext := range options.ExtensionOrder[split:] { // Non-TypeScript extensions after the split
+			if loader, ok := options.ExtensionToLoader[ext]; !ok || !loader.IsTypeScript() {
+				nodeModulesExtensionOrder = append(nodeModulesExtensionOrder, ext)
+			}
 		}
 	}
 
@@ -431,68 +448,14 @@ func (res *Resolver) Resolve(sourceDir string, importPath string, kind ast.Impor
 
 		r.flushDebugLogs(flushDueToSuccess)
 		return &ResolveResult{
-			PathPair:   PathPair{Primary: logger.Path{Text: importPath}},
-			IsExternal: true,
+			PathPair: PathPair{Primary: logger.Path{Text: importPath}, IsExternal: true},
 		}, debugMeta
 	}
 
-	// "import fs from 'fs'"
-	if r.options.Platform == config.PlatformNode && BuiltInNodeModules[importPath] {
-		if r.debugLogs != nil {
-			r.debugLogs.addNote("Marking this path as implicitly external due to it being a node built-in")
-		}
-
+	if pathPair, ok, sideEffects := r.checkForBuiltInNodeModules(importPath); ok {
 		r.flushDebugLogs(flushDueToSuccess)
 		return &ResolveResult{
-			PathPair:               PathPair{Primary: logger.Path{Text: importPath}},
-			IsExternal:             true,
-			PrimarySideEffectsData: &SideEffectsData{}, // Mark this with "sideEffects: false"
-		}, debugMeta
-	}
-
-	// "import fs from 'node:fs'"
-	// "require('node:fs')"
-	if r.options.Platform == config.PlatformNode && strings.HasPrefix(importPath, "node:") {
-		if r.debugLogs != nil {
-			r.debugLogs.addNote("Marking this path as implicitly external due to the \"node:\" prefix")
-		}
-
-		// If this is a known node built-in module, mark it with "sideEffects: false"
-		var sideEffects *SideEffectsData
-		if BuiltInNodeModules[strings.TrimPrefix(importPath, "node:")] {
-			sideEffects = &SideEffectsData{}
-		}
-
-		// Check whether the path will end up as "import" or "require"
-		convertImportToRequire := !r.options.OutputFormat.KeepESMImportExportSyntax()
-		isImport := !convertImportToRequire && (kind == ast.ImportStmt || kind == ast.ImportDynamic)
-		isRequire := kind == ast.ImportRequire || kind == ast.ImportRequireResolve ||
-			(convertImportToRequire && (kind == ast.ImportStmt || kind == ast.ImportDynamic))
-
-		// Check for support with "import"
-		if isImport && r.options.UnsupportedJSFeatures.Has(compat.NodeColonPrefixImport) {
-			if r.debugLogs != nil {
-				r.debugLogs.addNote("Removing the \"node:\" prefix because the target environment doesn't support it with \"import\" statements")
-			}
-
-			// Automatically strip the prefix if it's not supported
-			importPath = importPath[5:]
-		}
-
-		// Check for support with "require"
-		if isRequire && r.options.UnsupportedJSFeatures.Has(compat.NodeColonPrefixRequire) {
-			if r.debugLogs != nil {
-				r.debugLogs.addNote("Removing the \"node:\" prefix because the target environment doesn't support it with \"require\" calls")
-			}
-
-			// Automatically strip the prefix if it's not supported
-			importPath = importPath[5:]
-		}
-
-		r.flushDebugLogs(flushDueToSuccess)
-		return &ResolveResult{
-			PathPair:               PathPair{Primary: logger.Path{Text: importPath}},
-			IsExternal:             true,
+			PathPair:               pathPair,
 			PrimarySideEffectsData: sideEffects,
 		}, debugMeta
 	}
@@ -516,8 +479,7 @@ func (res *Resolver) Resolve(sourceDir string, importPath string, kind ast.Impor
 		}
 		r.flushDebugLogs(flushDueToSuccess)
 		return &ResolveResult{
-			PathPair:   PathPair{Primary: logger.Path{Text: importPath}},
-			IsExternal: true,
+			PathPair: PathPair{Primary: logger.Path{Text: importPath}, IsExternal: true},
 		}, debugMeta
 	}
 
@@ -730,8 +692,7 @@ func (res *Resolver) ResolveGlob(sourceDir string, importPathPattern []helpers.G
 					var result ResolveResult
 
 					if r.isExternal(r.options.ExternalSettings.PreResolve, relPath, kind) {
-						result.PathPair = PathPair{Primary: logger.Path{Text: relPath}}
-						result.IsExternal = true
+						result.PathPair = PathPair{Primary: logger.Path{Text: relPath}, IsExternal: true}
 
 						if r.debugLogs != nil {
 							r.debugLogs.addNote(fmt.Sprintf("The path %q was marked as external by the user", result.PathPair.Primary.Text))
@@ -847,11 +808,11 @@ func (r resolverQuery) flushDebugLogs(mode flushMode) {
 }
 
 func (r resolverQuery) finalizeResolve(result *ResolveResult) {
-	if !result.IsExternal && r.isExternal(r.options.ExternalSettings.PostResolve, result.PathPair.Primary.Text, r.kind) {
+	if !result.PathPair.IsExternal && r.isExternal(r.options.ExternalSettings.PostResolve, result.PathPair.Primary.Text, r.kind) {
 		if r.debugLogs != nil {
 			r.debugLogs.addNote(fmt.Sprintf("The path %q was marked as external by the user", result.PathPair.Primary.Text))
 		}
-		result.IsExternal = true
+		result.PathPair.IsExternal = true
 	} else {
 		for i, path := range result.PathPair.iter() {
 			if path.Namespace != "file" {
@@ -891,6 +852,11 @@ func (r resolverQuery) finalizeResolve(result *ResolveResult) {
 
 			// Path attributes are only taken from the primary path
 			if i > 0 {
+				continue
+			}
+
+			// Path attributes are not taken from disabled files
+			if path.IsDisabled() {
 				continue
 			}
 
@@ -998,36 +964,11 @@ func (r resolverQuery) resolveWithoutSymlinks(sourceDir string, sourceDirInfo *d
 		}
 	}
 
-	// First, check path overrides from the nearest enclosing TypeScript "tsconfig.json" file
-	if sourceDirInfo != nil {
-		if tsConfigJSON := r.tsConfigForDir(sourceDirInfo); tsConfigJSON != nil && tsConfigJSON.Paths != nil {
-			if absolute, ok, diffCase := r.matchTSConfigPaths(tsConfigJSON, importPath); ok {
-				return &ResolveResult{PathPair: absolute, DifferentCase: diffCase}
-			}
-		}
-	}
-
 	// Check both relative and package paths for CSS URL tokens, with relative
 	// paths taking precedence over package paths to match Webpack behavior.
 	isPackagePath := IsPackagePath(importPath)
 	checkRelative := !isPackagePath || r.kind.IsFromCSS()
 	checkPackage := isPackagePath
-
-	// "import 'pkg'" when all packages are external (vs. "import './pkg'"). This
-	// is deliberately done after we check for "tsconfig.json" aliases because
-	// people want to be able to make things look like packages but have them not
-	// be packages.
-	if r.options.ExternalPackages && isPackagePath && !strings.HasPrefix(importPath, "#") {
-		if r.debugLogs != nil {
-			r.debugLogs.addNote("Marking this path as external because it's a package path")
-		}
-
-		r.flushDebugLogs(flushDueToSuccess)
-		return &ResolveResult{
-			PathPair:   PathPair{Primary: logger.Path{Text: importPath}},
-			IsExternal: true,
-		}
-	}
 
 	if checkRelative {
 		absPath := r.fs.Join(sourceDir, importPath)
@@ -1037,7 +978,7 @@ func (r resolverQuery) resolveWithoutSymlinks(sourceDir string, sourceDirInfo *d
 			if r.debugLogs != nil {
 				r.debugLogs.addNote(fmt.Sprintf("The path %q was marked as external by the user", absPath))
 			}
-			return &ResolveResult{PathPair: PathPair{Primary: logger.Path{Text: absPath, Namespace: "file"}}, IsExternal: true}
+			return &ResolveResult{PathPair: PathPair{Primary: logger.Path{Text: absPath, Namespace: "file"}, IsExternal: true}}
 		}
 
 		// Check the "browser" map
@@ -1046,8 +987,8 @@ func (r resolverQuery) resolveWithoutSymlinks(sourceDir string, sourceDirInfo *d
 				if remapped == nil {
 					return &ResolveResult{PathPair: PathPair{Primary: logger.Path{Text: absPath, Namespace: "file", Flags: logger.PathDisabled}}}
 				}
-				if remappedResult, ok, diffCase := r.resolveWithoutRemapping(importDirInfo.enclosingBrowserScope, *remapped); ok {
-					result = ResolveResult{PathPair: remappedResult, DifferentCase: diffCase}
+				if remappedResult, ok, diffCase, sideEffects := r.resolveWithoutRemapping(importDirInfo.enclosingBrowserScope, *remapped); ok {
+					result = ResolveResult{PathPair: remappedResult, DifferentCase: diffCase, PrimarySideEffectsData: sideEffects}
 					checkRelative = false
 					checkPackage = false
 				}
@@ -1074,12 +1015,12 @@ func (r resolverQuery) resolveWithoutSymlinks(sourceDir string, sourceDirInfo *d
 		if remapped, ok := r.checkBrowserMap(sourceDirInfo, importPath, packagePathKind); ok {
 			if remapped == nil {
 				// "browser": {"module": false}
-				if absolute, ok, diffCase := r.loadNodeModules(importPath, sourceDirInfo, false /* forbidImports */); ok {
+				if absolute, ok, diffCase, sideEffects := r.loadNodeModules(importPath, sourceDirInfo, false /* forbidImports */); ok {
 					absolute.Primary = logger.Path{Text: absolute.Primary.Text, Namespace: "file", Flags: logger.PathDisabled}
 					if absolute.HasSecondary() {
 						absolute.Secondary = logger.Path{Text: absolute.Secondary.Text, Namespace: "file", Flags: logger.PathDisabled}
 					}
-					return &ResolveResult{PathPair: absolute, DifferentCase: diffCase}
+					return &ResolveResult{PathPair: absolute, DifferentCase: diffCase, PrimarySideEffectsData: sideEffects}
 				} else {
 					return &ResolveResult{PathPair: PathPair{Primary: logger.Path{Text: importPath, Flags: logger.PathDisabled}}, DifferentCase: diffCase}
 				}
@@ -1091,8 +1032,8 @@ func (r resolverQuery) resolveWithoutSymlinks(sourceDir string, sourceDirInfo *d
 			sourceDirInfo = sourceDirInfo.enclosingBrowserScope
 		}
 
-		if absolute, ok, diffCase := r.resolveWithoutRemapping(sourceDirInfo, importPath); ok {
-			result = ResolveResult{PathPair: absolute, DifferentCase: diffCase}
+		if absolute, ok, diffCase, sideEffects := r.resolveWithoutRemapping(sourceDirInfo, importPath); ok {
+			result = ResolveResult{PathPair: absolute, DifferentCase: diffCase, PrimarySideEffectsData: sideEffects}
 		} else {
 			// Note: node's "self references" are not currently supported
 			return nil
@@ -1102,11 +1043,12 @@ func (r resolverQuery) resolveWithoutSymlinks(sourceDir string, sourceDirInfo *d
 	return &result
 }
 
-func (r resolverQuery) resolveWithoutRemapping(sourceDirInfo *dirInfo, importPath string) (PathPair, bool, *fs.DifferentCase) {
+func (r resolverQuery) resolveWithoutRemapping(sourceDirInfo *dirInfo, importPath string) (PathPair, bool, *fs.DifferentCase, *SideEffectsData) {
 	if IsPackagePath(importPath) {
 		return r.loadNodeModules(importPath, sourceDirInfo, false /* forbidImports */)
 	} else {
-		return r.loadAsFileOrDirectory(r.fs.Join(sourceDirInfo.absPath, importPath))
+		absolute, ok, diffCase := r.loadAsFileOrDirectory(r.fs.Join(sourceDirInfo.absPath, importPath))
+		return absolute, ok, diffCase, nil
 	}
 }
 
@@ -2204,7 +2146,7 @@ func (r resolverQuery) matchTSConfigPaths(tsConfigJSON *TSConfigJSON, path strin
 	return PathPair{}, false, nil
 }
 
-func (r resolverQuery) loadPackageImports(importPath string, dirInfoPackageJSON *dirInfo) (PathPair, bool, *fs.DifferentCase) {
+func (r resolverQuery) loadPackageImports(importPath string, dirInfoPackageJSON *dirInfo) (PathPair, bool, *fs.DifferentCase, *SideEffectsData) {
 	packageJSON := dirInfoPackageJSON.packageJSON
 
 	if r.debugLogs != nil {
@@ -2222,7 +2164,7 @@ func (r resolverQuery) loadPackageImports(importPath string, dirInfoPackageJSON 
 		tracker := logger.MakeLineColumnTracker(&packageJSON.source)
 		r.debugMeta.notes = append(r.debugMeta.notes, tracker.MsgData(packageJSON.importsMap.root.firstToken,
 			fmt.Sprintf("This \"imports\" map was ignored because the module specifier %q is invalid:", importPath)))
-		return PathPair{}, false, nil
+		return PathPair{}, false, nil, nil
 	}
 
 	// The condition set is determined by the kind of import
@@ -2238,10 +2180,14 @@ func (r resolverQuery) loadPackageImports(importPath string, dirInfoPackageJSON 
 	resolvedPath, status, debug = r.esmHandlePostConditions(resolvedPath, status, debug)
 
 	if status == pjStatusPackageResolve {
+		if pathPair, ok, sideEffects := r.checkForBuiltInNodeModules(resolvedPath); ok {
+			return pathPair, true, nil, sideEffects
+		}
+
 		// The import path was remapped via "imports" to another import path
 		// that now needs to be resolved too. Set "forbidImports" to true
 		// so we don't try to resolve "imports" again and end up in a loop.
-		absolute, ok, diffCase := r.loadNodeModules(resolvedPath, dirInfoPackageJSON, true /* forbidImports */)
+		absolute, ok, diffCase, sideEffects := r.loadNodeModules(resolvedPath, dirInfoPackageJSON, true /* forbidImports */)
 		if !ok {
 			tracker := logger.MakeLineColumnTracker(&packageJSON.source)
 			r.debugMeta.notes = append(
@@ -2249,14 +2195,15 @@ func (r resolverQuery) loadPackageImports(importPath string, dirInfoPackageJSON 
 					fmt.Sprintf("The remapped path %q could not be resolved:", resolvedPath))},
 				r.debugMeta.notes...)
 		}
-		return absolute, ok, diffCase
+		return absolute, ok, diffCase, sideEffects
 	}
 
-	return r.finalizeImportsExportsResult(
+	absolute, ok, diffCase := r.finalizeImportsExportsResult(
 		dirInfoPackageJSON.absPath, conditions, *packageJSON.importsMap, packageJSON,
 		resolvedPath, status, debug,
 		"", "", "",
 	)
+	return absolute, ok, diffCase, nil
 }
 
 func (r resolverQuery) esmResolveAlgorithm(esmPackageName string, esmPackageSubpath string, packageJSON *packageJSON, absPkgPath string, absPath string) (PathPair, bool, *fs.DifferentCase) {
@@ -2300,18 +2247,28 @@ func (r resolverQuery) esmResolveAlgorithm(esmPackageName string, esmPackageSubp
 	)
 }
 
-func (r resolverQuery) loadNodeModules(importPath string, dirInfo *dirInfo, forbidImports bool) (PathPair, bool, *fs.DifferentCase) {
+func (r resolverQuery) loadNodeModules(importPath string, dirInfo *dirInfo, forbidImports bool) (PathPair, bool, *fs.DifferentCase, *SideEffectsData) {
 	if r.debugLogs != nil {
 		r.debugLogs.addNote(fmt.Sprintf("Searching for %q in \"node_modules\" directories starting from %q", importPath, dirInfo.absPath))
 		r.debugLogs.increaseIndent()
 		defer r.debugLogs.decreaseIndent()
 	}
 
-	// Try looking up the path relative to the base URL from "tsconfig.json"
-	if tsConfigJSON := r.tsConfigForDir(dirInfo); tsConfigJSON != nil && tsConfigJSON.BaseURL != nil {
-		basePath := r.fs.Join(*tsConfigJSON.BaseURL, importPath)
-		if absolute, ok, diffCase := r.loadAsFileOrDirectory(basePath); ok {
-			return absolute, true, diffCase
+	// First, check path overrides from the nearest enclosing TypeScript "tsconfig.json" file
+	if tsConfigJSON := r.tsConfigForDir(dirInfo); tsConfigJSON != nil {
+		// Try path substitutions first
+		if tsConfigJSON.Paths != nil {
+			if absolute, ok, diffCase := r.matchTSConfigPaths(tsConfigJSON, importPath); ok {
+				return absolute, true, diffCase, nil
+			}
+		}
+
+		// Try looking up the path relative to the base URL
+		if tsConfigJSON.BaseURL != nil {
+			basePath := r.fs.Join(*tsConfigJSON.BaseURL, importPath)
+			if absolute, ok, diffCase := r.loadAsFileOrDirectory(basePath); ok {
+				return absolute, true, diffCase, nil
+			}
 		}
 	}
 
@@ -2324,6 +2281,14 @@ func (r resolverQuery) loadNodeModules(importPath string, dirInfo *dirInfo, forb
 	// Check for subpath imports: https://nodejs.org/api/packages.html#subpath-imports
 	if dirInfoPackageJSON != nil && strings.HasPrefix(importPath, "#") && !forbidImports && dirInfoPackageJSON.packageJSON.importsMap != nil {
 		return r.loadPackageImports(importPath, dirInfoPackageJSON)
+	}
+
+	// "import 'pkg'" when all packages are external (vs. "import './pkg'")
+	if r.options.ExternalPackages && IsPackagePath(importPath) {
+		if r.debugLogs != nil {
+			r.debugLogs.addNote("Marking this path as external because it's a package path")
+		}
+		return PathPair{Primary: logger.Path{Text: importPath}, IsExternal: true}, true, nil, nil
 	}
 
 	// If Yarn PnP is active, use it to find the package
@@ -2344,7 +2309,7 @@ func (r resolverQuery) loadNodeModules(importPath string, dirInfo *dirInfo, forb
 					fmt.Sprintf("The Yarn Plug'n'Play manifest says this package has a peer dependency on %q, but the package %q has not been installed:", result.errorIdent, result.errorIdent))}
 			}
 
-			return PathPair{}, false, nil
+			return PathPair{}, false, nil, nil
 		} else if result.status == pnpSuccess {
 			absPath := r.fs.Join(result.pkgDirPath, result.pkgSubpath)
 
@@ -2356,28 +2321,29 @@ func (r resolverQuery) loadNodeModules(importPath string, dirInfo *dirInfo, forb
 			if pkgDirInfo := r.dirInfoCached(result.pkgDirPath); pkgDirInfo != nil {
 				// Check the "exports" map
 				if packageJSON := pkgDirInfo.packageJSON; packageJSON != nil && packageJSON.exportsMap != nil {
-					return r.esmResolveAlgorithm(result.pkgIdent, "."+result.pkgSubpath, packageJSON, pkgDirInfo.absPath, absPath)
+					absolute, ok, diffCase := r.esmResolveAlgorithm(result.pkgIdent, "."+result.pkgSubpath, packageJSON, pkgDirInfo.absPath, absPath)
+					return absolute, ok, diffCase, nil
 				}
 
 				// Check the "browser" map
 				if remapped, ok := r.checkBrowserMap(pkgDirInfo, absPath, absolutePathKind); ok {
 					if remapped == nil {
-						return PathPair{Primary: logger.Path{Text: absPath, Namespace: "file", Flags: logger.PathDisabled}}, true, nil
+						return PathPair{Primary: logger.Path{Text: absPath, Namespace: "file", Flags: logger.PathDisabled}}, true, nil, nil
 					}
-					if remappedResult, ok, diffCase := r.resolveWithoutRemapping(pkgDirInfo.enclosingBrowserScope, *remapped); ok {
-						return remappedResult, true, diffCase
+					if remappedResult, ok, diffCase, sideEffects := r.resolveWithoutRemapping(pkgDirInfo.enclosingBrowserScope, *remapped); ok {
+						return remappedResult, true, diffCase, sideEffects
 					}
 				}
 
 				if absolute, ok, diffCase := r.loadAsFileOrDirectory(absPath); ok {
-					return absolute, true, diffCase
+					return absolute, true, diffCase, nil
 				}
 			}
 
 			if r.debugLogs != nil {
 				r.debugLogs.addNote(fmt.Sprintf("Failed to resolve %q to a file", absPath))
 			}
-			return PathPair{}, false, nil
+			return PathPair{}, false, nil, nil
 		}
 	}
 
@@ -2390,13 +2356,14 @@ func (r resolverQuery) loadNodeModules(importPath string, dirInfo *dirInfo, forb
 	// Check for self-references
 	if dirInfoPackageJSON != nil {
 		if packageJSON := dirInfoPackageJSON.packageJSON; packageJSON.name == esmPackageName && packageJSON.exportsMap != nil {
-			return r.esmResolveAlgorithm(esmPackageName, esmPackageSubpath, packageJSON,
+			absolute, ok, diffCase := r.esmResolveAlgorithm(esmPackageName, esmPackageSubpath, packageJSON,
 				dirInfoPackageJSON.absPath, r.fs.Join(dirInfoPackageJSON.absPath, esmPackageSubpath))
+			return absolute, ok, diffCase, nil
 		}
 	}
 
 	// Common package resolution logic shared between "node_modules" and "NODE_PATHS"
-	tryToResolvePackage := func(absDir string) (PathPair, bool, *fs.DifferentCase, bool) {
+	tryToResolvePackage := func(absDir string) (PathPair, bool, *fs.DifferentCase, *SideEffectsData, bool) {
 		absPath := r.fs.Join(absDir, importPath)
 		if r.debugLogs != nil {
 			r.debugLogs.addNote(fmt.Sprintf("Checking for a package in the directory %q", absPath))
@@ -2409,16 +2376,16 @@ func (r resolverQuery) loadNodeModules(importPath string, dirInfo *dirInfo, forb
 				// Check the "exports" map
 				if packageJSON := pkgDirInfo.packageJSON; packageJSON != nil && packageJSON.exportsMap != nil {
 					absolute, ok, diffCase := r.esmResolveAlgorithm(esmPackageName, esmPackageSubpath, packageJSON, absPkgPath, absPath)
-					return absolute, ok, diffCase, true
+					return absolute, ok, diffCase, nil, true
 				}
 
 				// Check the "browser" map
 				if remapped, ok := r.checkBrowserMap(pkgDirInfo, absPath, absolutePathKind); ok {
 					if remapped == nil {
-						return PathPair{Primary: logger.Path{Text: absPath, Namespace: "file", Flags: logger.PathDisabled}}, true, nil, true
+						return PathPair{Primary: logger.Path{Text: absPath, Namespace: "file", Flags: logger.PathDisabled}}, true, nil, nil, true
 					}
-					if remappedResult, ok, diffCase := r.resolveWithoutRemapping(pkgDirInfo.enclosingBrowserScope, *remapped); ok {
-						return remappedResult, true, diffCase, true
+					if remappedResult, ok, diffCase, sideEffects := r.resolveWithoutRemapping(pkgDirInfo.enclosingBrowserScope, *remapped); ok {
+						return remappedResult, true, diffCase, sideEffects, true
 					}
 				}
 			}
@@ -2426,10 +2393,10 @@ func (r resolverQuery) loadNodeModules(importPath string, dirInfo *dirInfo, forb
 
 		// Try node's old package resolution rules
 		if absolute, ok, diffCase := r.loadAsFileOrDirectory(absPath); ok {
-			return absolute, true, diffCase, true
+			return absolute, true, diffCase, nil, true
 		}
 
-		return PathPair{}, false, nil, false
+		return PathPair{}, false, nil, nil, false
 	}
 
 	// Then check for the package in any enclosing "node_modules" directories
@@ -2437,8 +2404,8 @@ func (r resolverQuery) loadNodeModules(importPath string, dirInfo *dirInfo, forb
 		// Skip directories that are themselves called "node_modules", since we
 		// don't ever want to search for "node_modules/node_modules"
 		if dirInfo.hasNodeModules {
-			if absolute, ok, diffCase, shouldStop := tryToResolvePackage(r.fs.Join(dirInfo.absPath, "node_modules")); shouldStop {
-				return absolute, ok, diffCase
+			if absolute, ok, diffCase, sideEffects, shouldStop := tryToResolvePackage(r.fs.Join(dirInfo.absPath, "node_modules")); shouldStop {
+				return absolute, ok, diffCase, sideEffects
 			}
 		}
 
@@ -2453,9 +2420,68 @@ func (r resolverQuery) loadNodeModules(importPath string, dirInfo *dirInfo, forb
 	// clarified that this step comes last after searching for "node_modules"
 	// directories: https://github.com/nodejs/node/issues/38128.
 	for _, absDir := range r.options.AbsNodePaths {
-		if absolute, ok, diffCase, shouldStop := tryToResolvePackage(absDir); shouldStop {
-			return absolute, ok, diffCase
+		if absolute, ok, diffCase, sideEffects, shouldStop := tryToResolvePackage(absDir); shouldStop {
+			return absolute, ok, diffCase, sideEffects
 		}
+	}
+
+	return PathPair{}, false, nil, nil
+}
+
+func (r resolverQuery) checkForBuiltInNodeModules(importPath string) (PathPair, bool, *SideEffectsData) {
+	// "import fs from 'fs'"
+	if r.options.Platform == config.PlatformNode && BuiltInNodeModules[importPath] {
+		if r.debugLogs != nil {
+			r.debugLogs.addNote("Marking this path as implicitly external due to it being a node built-in")
+		}
+
+		r.flushDebugLogs(flushDueToSuccess)
+		return PathPair{Primary: logger.Path{Text: importPath}, IsExternal: true},
+			true,
+			&SideEffectsData{} // Mark this with "sideEffects: false"
+	}
+
+	// "import fs from 'node:fs'"
+	// "require('node:fs')"
+	if r.options.Platform == config.PlatformNode && strings.HasPrefix(importPath, "node:") {
+		if r.debugLogs != nil {
+			r.debugLogs.addNote("Marking this path as implicitly external due to the \"node:\" prefix")
+		}
+
+		// If this is a known node built-in module, mark it with "sideEffects: false"
+		var sideEffects *SideEffectsData
+		if BuiltInNodeModules[strings.TrimPrefix(importPath, "node:")] {
+			sideEffects = &SideEffectsData{}
+		}
+
+		// Check whether the path will end up as "import" or "require"
+		convertImportToRequire := !r.options.OutputFormat.KeepESMImportExportSyntax()
+		isImport := !convertImportToRequire && (r.kind == ast.ImportStmt || r.kind == ast.ImportDynamic)
+		isRequire := r.kind == ast.ImportRequire || r.kind == ast.ImportRequireResolve ||
+			(convertImportToRequire && (r.kind == ast.ImportStmt || r.kind == ast.ImportDynamic))
+
+		// Check for support with "import"
+		if isImport && r.options.UnsupportedJSFeatures.Has(compat.NodeColonPrefixImport) {
+			if r.debugLogs != nil {
+				r.debugLogs.addNote("Removing the \"node:\" prefix because the target environment doesn't support it with \"import\" statements")
+			}
+
+			// Automatically strip the prefix if it's not supported
+			importPath = importPath[5:]
+		}
+
+		// Check for support with "require"
+		if isRequire && r.options.UnsupportedJSFeatures.Has(compat.NodeColonPrefixRequire) {
+			if r.debugLogs != nil {
+				r.debugLogs.addNote("Removing the \"node:\" prefix because the target environment doesn't support it with \"require\" calls")
+			}
+
+			// Automatically strip the prefix if it's not supported
+			importPath = importPath[5:]
+		}
+
+		r.flushDebugLogs(flushDueToSuccess)
+		return PathPair{Primary: logger.Path{Text: importPath}, IsExternal: true}, true, sideEffects
 	}
 
 	return PathPair{}, false, nil
