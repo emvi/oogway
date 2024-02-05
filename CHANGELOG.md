@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.4.1
+
+* updated dependencies
+
 ## 1.4.0
 
 * switched to vendoring dependencies
