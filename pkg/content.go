@@ -6,6 +6,7 @@ import (
 	"io/fs"
 	"log"
 	"net/http"
+	"net/url"
 	"os"
 	"path/filepath"
 	"strconv"
@@ -27,6 +28,11 @@ const (
 
 type meta struct {
 	SitemapPriority float64 `toml:"sitemap_priority"`
+}
+
+// PageData is all data passed to the page template.
+type PageData struct {
+	URL *url.URL
 }
 
 var (
@@ -175,7 +181,7 @@ func renderPage(w http.ResponseWriter, r *http.Request) {
 			if tpl != nil {
 				go pageView(r, cfg.Content.NotFound)
 
-				if err := tpl.Execute(w, nil); err != nil {
+				if err := tpl.Execute(w, getPageData(r)); err != nil {
 					log.Printf("Error rendering page %s: %s", r.URL.Path, err)
 					w.WriteHeader(http.StatusInternalServerError)
 				}
@@ -187,8 +193,14 @@ func renderPage(w http.ResponseWriter, r *http.Request) {
 
 	go pageView(r, "")
 
-	if err := tpl.Execute(w, nil); err != nil {
+	if err := tpl.Execute(w, getPageData(r)); err != nil {
 		log.Printf("Error rendering page %s: %s", r.URL.Path, err)
 		w.WriteHeader(http.StatusInternalServerError)
+	}
+}
+
+func getPageData(r *http.Request) PageData {
+	return PageData{
+		URL: r.URL,
 	}
 }

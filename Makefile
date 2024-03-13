@@ -1,4 +1,4 @@
-.PHONY: deps test build_mac build_windows build_linux
+.PHONY: deps test build_mac build_windows build_linux demo
 
 deps:
 	go get -u -t ./...
@@ -15,3 +15,6 @@ build_windows: test
 
 build_linux: test
 	GOOS=linux GOARCH=amd64 go build -a -installsuffix cgo -ldflags "-s -w" cmd/oogway/main.go
+
+demo:
+	go run cmd/oogway/main.go run demo

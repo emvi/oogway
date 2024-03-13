@@ -20,7 +20,7 @@ github.com/davecgh/go-spew/spew
 # github.com/emvi/null v1.3.1
 ## explicit
 github.com/emvi/null
-# github.com/evanw/esbuild v0.20.0
+# github.com/evanw/esbuild v0.20.1
 ## explicit; go 1.13
 github.com/evanw/esbuild/internal/api_helpers
 github.com/evanw/esbuild/internal/ast
@@ -76,8 +76,8 @@ github.com/pirsch-analytics/pirsch-go-sdk
 # github.com/pmezard/go-difflib v1.0.0
 ## explicit
 github.com/pmezard/go-difflib/difflib
-# github.com/stretchr/testify v1.8.4
-## explicit; go 1.20
+# github.com/stretchr/testify v1.9.0
+## explicit; go 1.17
 github.com/stretchr/testify/assert
 # github.com/yuin/goldmark v1.7.0
 ## explicit; go 1.19
@@ -90,11 +90,11 @@ github.com/yuin/goldmark/renderer
 github.com/yuin/goldmark/renderer/html
 github.com/yuin/goldmark/text
 github.com/yuin/goldmark/util
-# golang.org/x/crypto v0.18.0
+# golang.org/x/crypto v0.21.0
 ## explicit; go 1.18
 golang.org/x/crypto/pbkdf2
 golang.org/x/crypto/scrypt
-# golang.org/x/sys v0.16.0
+# golang.org/x/sys v0.18.0
 ## explicit; go 1.18
 golang.org/x/sys/unix
 golang.org/x/sys/windows

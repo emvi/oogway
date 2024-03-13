@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.5.0
+
+* added URL to page data
+* added int and uint64 template functions
+* updated dependencies
+
 ## 1.4.1
 
 * updated dependencies

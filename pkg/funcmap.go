@@ -11,6 +11,7 @@ import (
 	"log"
 	"os"
 	"path/filepath"
+	"strconv"
 	tt "text/template"
 )
 
@@ -21,6 +22,11 @@ var (
 		"partial":       renderPartial,
 		"markdown":      renderMarkdown,
 		"markdownBlock": renderMarkdownBlock,
+		"int": func(v string) int {
+			i, _ := strconv.Atoi(v)
+			return i
+		},
+		"uint64": func(i int) uint64 { return uint64(i) },
 	}
 )
 

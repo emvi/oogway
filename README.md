@@ -97,13 +97,15 @@ You can find a demo in the `demo` directory of the GitHub repository.
 
 Oogway comes with a number of template functions that can be used to create pages.
 
-| Function | Description | Example |
-| - | - | - |
-| config | Exposes the Oogway configuration. | `{{config.Server.Host}}` |
-| content | Renders a template for given data. Use the route for the template name | `{{content "/about" .}}` |
-| partial | Renders a partial template for given data. Use the filename without the file extension. | `{{partial "head" .}}` |
-| markdown | Renders given markdown file as HTML using Go text templates. Use the full path for the template name. | `{{markdown "content/blog/article.md" .}}` |
+| Function      | Description                                                                                                        | Example                                                     |
+|---------------|--------------------------------------------------------------------------------------------------------------------|-------------------------------------------------------------|
+| config        | Exposes the Oogway configuration.                                                                                  | `{{config.Server.Host}}`                                    |
+| content       | Renders a template for given data. Use the route for the template name                                             | `{{content "/about" .}}`                                    |
+| partial       | Renders a partial template for given data. Use the filename without the file extension.                            | `{{partial "head" .}}`                                      |
+| markdown      | Renders given markdown file as HTML using Go text templates. Use the full path for the template name.              | `{{markdown "content/blog/article.md" .}}`                  |
 | markdownBlock | Renders a block from given markdown file as HTML using Go text templates. Use the full path for the template name. | `{{markdownBlock "content/blog/article.md" "blockName" .}}` |
+| int           | Converts given string to an integer.                                                                               | `{{int "123"}}`                                             |
+| uint64        | Converts given int to an uint64.                                                                                   | `{{uint64 123}}`                                            |
 
 For more features, see the [Sprig documentation](github.com/Masterminds/sprig).
 
